@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#2563eb">
   <title>TradePulse — India's Premier Paper Trading Terminal</title>
   <link rel="stylesheet" href="css/styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -275,6 +276,16 @@
 
       <!-- ==================== 3. HOLDINGS VIEW ==================== -->
       <div class="view-section" id="view-holdings">
+        <!-- Mobile Portfolio Subtabs (Zerodha Kite Mobile Style) -->
+        <div class="mobile-portfolio-tabs">
+          <button class="mobile-port-tab active" onclick="app.switchView('holdings')">
+            Holdings (<span id="mobHoldingsTabCount">0</span>)
+          </button>
+          <button class="mobile-port-tab" onclick="app.switchView('positions')">
+            Positions (<span id="mobPositionsTabCount">0</span>)
+          </button>
+        </div>
+
         <div class="page-title-row">
           <div>
             <h1 class="page-title">Holdings (CNC)</h1>
@@ -346,6 +357,16 @@
 
       <!-- ==================== 4. POSITIONS VIEW ==================== -->
       <div class="view-section" id="view-positions">
+        <!-- Mobile Portfolio Subtabs (Zerodha Kite Mobile Style) -->
+        <div class="mobile-portfolio-tabs">
+          <button class="mobile-port-tab" onclick="app.switchView('holdings')">
+            Holdings (<span id="mobHoldingsTabCount2">0</span>)
+          </button>
+          <button class="mobile-port-tab active" onclick="app.switchView('positions')">
+            Positions (<span id="mobPositionsTabCount2">0</span>)
+          </button>
+        </div>
+
         <div class="page-title-row">
           <div>
             <h1 class="page-title">Positions (Intraday &amp; F&amp;O Options)</h1>
@@ -401,6 +422,30 @@
 
       <!-- ==================== 5. FUNDS VIEW ==================== -->
       <div class="view-section" id="view-funds">
+        <!-- Mobile User Profile Card (Zerodha Kite Mobile Profile Tab) -->
+        <div class="mobile-profile-card">
+          <div class="mob-prof-user-row">
+            <div class="user-avatar mob-prof-avatar" id="mobUserAvatar">TP</div>
+            <div class="mob-prof-info">
+              <div class="mob-prof-name" id="mobUserName">Demo Learner</div>
+              <div class="mob-prof-email" id="mobUserEmail">demo@tradepulse.app</div>
+              <div class="mob-prof-clientid" id="mobUserClientId">Client ID: TP7842</div>
+            </div>
+          </div>
+          <div class="mob-prof-actions-row">
+            <button class="btn-secondary" style="flex:1;font-size:12px;padding:8px;" onclick="app.openAuthModal('signup')">
+              👤 New Account
+            </button>
+            <button class="btn-danger" style="flex:1;font-size:12px;padding:8px;" onclick="store.logout(); app.renderUserQuickFunds(); app.renderActiveView(); app.openAuthModal('login');">
+              🚪 Logout
+            </button>
+          </div>
+          <div class="mob-prof-toggle-row">
+            <span style="font-size:12px;color:var(--text-secondary);font-weight:600;">Force Live Ticks (Demo Mode):</span>
+            <input type="checkbox" id="forceMarketTickToggleMob" style="accent-color:var(--tp-blue);width:18px;height:18px;cursor:pointer;">
+          </div>
+        </div>
+
         <div class="page-title-row">
           <div>
             <h1 class="page-title">Funds &amp; Demo Capital</h1>
@@ -673,8 +718,9 @@
   </div>
 
   <!-- ==================== COLORFUL AUTH PORTAL (SIGN UP / LOGIN) ==================== -->
-  <div class="modal-backdrop" id="authModalBackdrop">
+  <div class="modal-backdrop" id="authModalBackdrop" onclick="if(event.target===this)app.closeAuthModal()">
     <div class="auth-modal-card">
+      <button class="modal-close-icon" type="button" onclick="app.closeAuthModal()" title="Close">&times;</button>
       <div class="auth-banner">
         <h2>Trade<span>Pulse</span> Terminal</h2>
         <p style="font-size:13px;opacity:0.9;">Sign in or create your risk-free demo account</p>
@@ -752,6 +798,135 @@
       </div>
     </div>
   </div>
+
+  <!-- ==================== ZERODHA KITE MOBILE STOCK ACTION DRAWER ==================== -->
+  <div class="modal-backdrop mobile-stock-sheet-backdrop" id="mobileStockSheetBackdrop" onclick="if(event.target===this)app.closeStockSheet()">
+    <div class="mobile-stock-sheet" id="mobileStockSheet">
+      <div class="sheet-drag-handle"></div>
+      
+      <div class="sheet-header">
+        <div class="sheet-title-col">
+          <div class="sheet-symbol-row">
+            <span class="sheet-symbol" id="sheetStockSymbol">LT</span>
+            <span class="sheet-exchange-tag" id="sheetStockExchange">NSE</span>
+            <span class="sheet-sector-tag" id="sheetStockSector">INFRA</span>
+          </div>
+          <div class="sheet-fullname" id="sheetStockFullname">Larsen &amp; Toubro Ltd.</div>
+        </div>
+
+        <div class="sheet-price-col">
+          <div class="sheet-ltp" id="sheetStockLTP">₹4,018.50</div>
+          <div class="sheet-delta text-green" id="sheetStockDelta">+74.10 (+1.88%)</div>
+        </div>
+
+        <button class="sheet-close-btn" onclick="app.closeStockSheet()" aria-label="Close sheet">&times;</button>
+      </div>
+
+      <!-- Prominent Zerodha Kite Buy & Sell Buttons -->
+      <div class="sheet-main-actions">
+        <button class="sheet-action-btn sheet-btn-buy" id="sheetBtnBuy">
+          <span class="sheet-btn-action-text">BUY</span>
+          <span class="sheet-btn-sub-text">INSTANT ORDER</span>
+        </button>
+        <button class="sheet-action-btn sheet-btn-sell" id="sheetBtnSell">
+          <span class="sheet-btn-action-text">SELL</span>
+          <span class="sheet-btn-sub-text">INSTANT ORDER</span>
+        </button>
+      </div>
+
+      <!-- Quick Action Utilities (View Chart, Option Chain, Market Depth) -->
+      <div class="sheet-utility-row">
+        <button class="sheet-util-btn" id="sheetBtnChart">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span>View Chart</span>
+        </button>
+        <button class="sheet-util-btn" id="sheetBtnOptionChain">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span>Option Chain</span>
+        </button>
+        <button class="sheet-util-btn" id="sheetBtnDepth">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="12" x2="21" y2="12"/></svg>
+          <span>Depth</span>
+        </button>
+      </div>
+
+      <!-- OHLC & Market Stats Grid -->
+      <div class="sheet-stats-card">
+        <div class="sheet-stat-item">
+          <span class="sheet-stat-lbl">Open</span>
+          <span class="sheet-stat-val" id="sheetStatOpen">₹3,950.00</span>
+        </div>
+        <div class="sheet-stat-item">
+          <span class="sheet-stat-lbl">High</span>
+          <span class="sheet-stat-val text-green" id="sheetStatHigh">₹4,035.00</span>
+        </div>
+        <div class="sheet-stat-item">
+          <span class="sheet-stat-lbl">Low</span>
+          <span class="sheet-stat-val text-red" id="sheetStatLow">₹3,940.00</span>
+        </div>
+        <div class="sheet-stat-item">
+          <span class="sheet-stat-lbl">Prev Close</span>
+          <span class="sheet-stat-val" id="sheetStatClose">₹3,944.40</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== ZERODHA KITE MOBILE BOTTOM NAVIGATION ==================== -->
+  <nav class="mobile-bottom-nav" id="mobileBottomNav">
+    <button class="mob-nav-item active" data-mob-tab="watchlist" onclick="app.switchMobileTab('watchlist')">
+      <div class="mob-nav-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+        </svg>
+      </div>
+      <span class="mob-nav-label">Watchlist</span>
+    </button>
+
+    <button class="mob-nav-item" data-mob-tab="orders" onclick="app.switchMobileTab('orders')">
+      <div class="mob-nav-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+        <span class="mob-badge" id="mobBadgeOrders" style="display:none;">0</span>
+      </div>
+      <span class="mob-nav-label">Orders</span>
+    </button>
+
+    <button class="mob-nav-item" data-mob-tab="portfolio" onclick="app.switchMobileTab('portfolio')">
+      <div class="mob-nav-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+        </svg>
+        <span class="mob-badge" id="mobBadgePortfolio" style="display:none;">0</span>
+      </div>
+      <span class="mob-nav-label">Portfolio</span>
+    </button>
+
+    <button class="mob-nav-item" data-mob-tab="dashboard" onclick="app.switchMobileTab('dashboard')">
+      <div class="mob-nav-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+        </svg>
+      </div>
+      <span class="mob-nav-label">Dashboard</span>
+    </button>
+
+    <button class="mob-nav-item" data-mob-tab="funds" onclick="app.switchMobileTab('funds')">
+      <div class="mob-nav-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+      </div>
+      <span class="mob-nav-label">Profile</span>
+    </button>
+  </nav>
 
   <!-- Toast Container -->
   <div class="toast-container" id="toastContainer"></div>

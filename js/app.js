@@ -116,6 +116,7 @@ class App {
     this.setupChart();
     this.setupFundsActions();
     this.setupProfileDropdown();
+    this.setupMobile();
     this.renderHeaderIndices();
     this.renderUserQuickFunds();
     this.renderActiveView();
@@ -318,7 +319,27 @@ class App {
       activeSec.classList.add("active");
     }
 
+    // Synchronize mobile bottom nav state
+    if (viewName === "orders") {
+      this.updateMobileTabState("orders");
+    } else if (viewName === "holdings" || viewName === "positions") {
+      this.updateMobileTabState("portfolio");
+    } else if (viewName === "dashboard") {
+      if (document.body.getAttribute("data-mobile-tab") !== "watchlist") {
+        this.updateMobileTabState("dashboard");
+      }
+    } else if (viewName === "funds") {
+      this.updateMobileTabState("funds");
+    }
+
     this.renderActiveView();
+  }
+
+  updateMobileTabState(tab) {
+    document.body.setAttribute("data-mobile-tab", tab);
+    document.querySelectorAll(".mob-nav-item").forEach((item) => {
+      item.classList.toggle("active", item.getAttribute("data-mob-tab") === tab);
+    });
   }
 
   renderActiveView() {
@@ -343,7 +364,7 @@ class App {
   }
 
   updateNavBadges() {
-    const openOrdersCount = store.orders.filter((o) => o.status === "OPEN").length;
+    const openOrdersCount = store.orders.filter((o) => o.status === "OPEN" || o.status === "AMO PENDING").length;
     const openOrdersBadge = document.getElementById("badgeOpenOrders");
     if (openOrdersBadge) {
       openOrdersBadge.textContent = openOrdersCount || "";
@@ -362,6 +383,31 @@ class App {
       positionsBadge.textContent = openPos || "";
       positionsBadge.style.display = openPos ? "inline-block" : "none";
     }
+
+    // Mobile Bottom Navigation Badges
+    const mobOrdersBadge = document.getElementById("mobBadgeOrders");
+    if (mobOrdersBadge) {
+      mobOrdersBadge.textContent = openOrdersCount || "";
+      mobOrdersBadge.style.display = openOrdersCount ? "inline-block" : "none";
+    }
+
+    const mobPortBadge = document.getElementById("mobBadgePortfolio");
+    const portCount = store.holdings.length + openPos;
+    if (mobPortBadge) {
+      mobPortBadge.textContent = portCount || "";
+      mobPortBadge.style.display = portCount ? "inline-block" : "none";
+    }
+
+    // Mobile Portfolio Subtabs Counts
+    const mobHCount = document.getElementById("mobHoldingsTabCount");
+    const mobHCount2 = document.getElementById("mobHoldingsTabCount2");
+    if (mobHCount) mobHCount.textContent = store.holdings.length;
+    if (mobHCount2) mobHCount2.textContent = store.holdings.length;
+
+    const mobPCount = document.getElementById("mobPositionsTabCount");
+    const mobPCount2 = document.getElementById("mobPositionsTabCount2");
+    if (mobPCount) mobPCount.textContent = openPos;
+    if (mobPCount2) mobPCount2.textContent = openPos;
   }
 
   renderUserQuickFunds() {
@@ -374,16 +420,32 @@ class App {
     const menuEmail = document.getElementById("menuUserEmail");
     const menuClientId = document.getElementById("menuUserClientId");
 
+    const mobAvatar = document.getElementById("mobUserAvatar");
+    const mobName = document.getElementById("mobUserName");
+    const mobEmail = document.getElementById("mobUserEmail");
+    const mobClientId = document.getElementById("mobUserClientId");
+
     if (store.currentUser) {
-      if (avatar) avatar.textContent = store.currentUser.name.slice(0, 2).toUpperCase();
+      const initials = (store.currentUser.name || "TP").slice(0, 2).toUpperCase();
+      if (avatar) avatar.textContent = initials;
       if (menuName) menuName.textContent = store.currentUser.name;
       if (menuEmail) menuEmail.textContent = store.currentUser.email;
-      if (menuClientId) menuClientId.textContent = `Client ID: ${store.currentUser.clientId}`;
+      if (menuClientId) menuClientId.textContent = `Client ID: ${store.currentUser.clientId || "TP7842"}`;
+
+      if (mobAvatar) mobAvatar.textContent = initials;
+      if (mobName) mobName.textContent = store.currentUser.name;
+      if (mobEmail) mobEmail.textContent = store.currentUser.email;
+      if (mobClientId) mobClientId.textContent = `Client ID: ${store.currentUser.clientId || "TP7842"}`;
     } else {
-      if (avatar) avatar.textContent = "??";
-      if (menuName) menuName.textContent = "Not Logged In";
-      if (menuEmail) menuEmail.textContent = "Click to sign up or login";
-      if (menuClientId) menuClientId.textContent = "Demo Account";
+      if (avatar) avatar.textContent = "TP";
+      if (menuName) menuName.textContent = "Demo Learner";
+      if (menuEmail) menuEmail.textContent = "demo@tradepulse.app";
+      if (menuClientId) menuClientId.textContent = "Client ID: TP7842";
+
+      if (mobAvatar) mobAvatar.textContent = "TP";
+      if (mobName) mobName.textContent = "Demo Learner";
+      if (mobEmail) mobEmail.textContent = "demo@tradepulse.app";
+      if (mobClientId) mobClientId.textContent = "Client ID: TP7842";
     }
   }
 
@@ -545,6 +607,13 @@ class App {
     const s = STOCKS_MAP.get(symbol);
     if (!s) return;
     this.selectedStock = s;
+
+    // On mobile screens (<= 768px), open the signature Zerodha Mobile Action Sheet!
+    if (window.innerWidth <= 768) {
+      this.openStockSheet(symbol);
+      return;
+    }
+
     if (this.currentView === "dashboard") {
       this.viewStockChart(symbol);
     }
@@ -589,6 +658,19 @@ class App {
 
       if (this.selectedStock && this.selectedStock.symbol === stock.symbol && this.chart) {
         this.chart.render();
+      }
+
+      // Live update for Mobile Stock Sheet if open
+      const sheet = document.getElementById("mobileStockSheetBackdrop");
+      if (sheet && sheet.classList.contains("open") && this.selectedStock && this.selectedStock.symbol === stock.symbol) {
+        const ltpEl = document.getElementById("sheetStockLTP");
+        const deltaEl = document.getElementById("sheetStockDelta");
+        const isPos = stock.change >= 0;
+        if (ltpEl) ltpEl.textContent = `₹${stock.price.toFixed(2)}`;
+        if (deltaEl) {
+          deltaEl.className = `sheet-delta ${isPos ? 'text-green' : 'text-red'}`;
+          deltaEl.textContent = `${isPos ? '+' : ''}${stock.change.toFixed(2)} (${isPos ? '+' : ''}${stock.pChange.toFixed(2)}%)`;
+        }
       }
     });
 
@@ -1409,6 +1491,154 @@ class App {
         this.renderActiveView();
       });
     }
+  }
+
+  // ==========================================================================
+  // ZERODHA KITE MOBILE CONTROLLER
+  // ==========================================================================
+  setupMobile() {
+    // If mobile viewport on initial page load, default to Watchlist view
+    if (window.innerWidth <= 768) {
+      document.body.setAttribute("data-mobile-tab", "watchlist");
+      this.updateMobileTabState("watchlist");
+    }
+
+    // Sync mobile tick toggle in Funds tab with engine
+    const mobTickToggle = document.getElementById("forceMarketTickToggleMob");
+    const desktopTickToggle = document.getElementById("forceMarketTickToggle");
+    if (mobTickToggle) {
+      mobTickToggle.addEventListener("change", (e) => {
+        engine.setForceOpen(e.target.checked);
+        if (desktopTickToggle) desktopTickToggle.checked = e.target.checked;
+        window.showToast(e.target.checked ? "Market simulated: LIVE TICKS ACTIVE" : "Market set to: OFFICIAL MARKET HOURS (09:15 - 15:30 IST)", "info");
+      });
+    }
+
+    // Window resize handler: gracefully sync layout
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 768) {
+        document.body.removeAttribute("data-mobile-tab");
+      } else {
+        if (!document.body.getAttribute("data-mobile-tab")) {
+          document.body.setAttribute("data-mobile-tab", "watchlist");
+          this.updateMobileTabState("watchlist");
+        }
+      }
+    });
+  }
+
+  switchMobileTab(tab) {
+    this.activeMobileTab = tab;
+    this.updateMobileTabState(tab);
+
+    if (tab === "watchlist") {
+      this.renderWatchlist();
+      const pane = document.querySelector(".watchlist-pane");
+      if (pane) pane.scrollTop = 0;
+    } else if (tab === "orders") {
+      this.switchView("orders");
+    } else if (tab === "portfolio") {
+      if (this.currentView !== "positions") {
+        this.switchView("holdings");
+      } else {
+        this.switchView("positions");
+      }
+    } else if (tab === "dashboard") {
+      this.switchView("dashboard");
+    } else if (tab === "funds") {
+      this.switchView("funds");
+    }
+  }
+
+  openStockSheet(symbol) {
+    const stock = STOCKS_MAP.get(symbol);
+    if (!stock) return;
+    this.selectedStock = stock;
+
+    const sheet = document.getElementById("mobileStockSheetBackdrop");
+    const symEl = document.getElementById("sheetStockSymbol");
+    const exEl = document.getElementById("sheetStockExchange");
+    const secEl = document.getElementById("sheetStockSector");
+    const nameEl = document.getElementById("sheetStockFullname");
+    const ltpEl = document.getElementById("sheetStockLTP");
+    const deltaEl = document.getElementById("sheetStockDelta");
+
+    const btnBuy = document.getElementById("sheetBtnBuy");
+    const btnSell = document.getElementById("sheetBtnSell");
+    const btnChart = document.getElementById("sheetBtnChart");
+    const btnOc = document.getElementById("sheetBtnOptionChain");
+    const btnDepth = document.getElementById("sheetBtnDepth");
+
+    const isPos = stock.change >= 0;
+
+    if (symEl) symEl.textContent = stock.symbol;
+    if (exEl) exEl.textContent = stock.exchange || "NSE";
+    if (secEl) {
+      secEl.textContent = stock.sector || "EQUITY";
+      secEl.className = `sheet-sector-tag ${stock.sectorClass || ''}`;
+    }
+    if (nameEl) nameEl.textContent = stock.name;
+    if (ltpEl) ltpEl.textContent = `₹${stock.price.toFixed(2)}`;
+    if (deltaEl) {
+      deltaEl.className = `sheet-delta ${isPos ? 'text-green' : 'text-red'}`;
+      deltaEl.textContent = `${isPos ? '+' : ''}${stock.change.toFixed(2)} (${isPos ? '+' : ''}${stock.pChange.toFixed(2)}%)`;
+    }
+
+    // OHLC Summary stats
+    const openVal = stock.prevClose ? (stock.prevClose * 1.002).toFixed(2) : stock.price.toFixed(2);
+    const highVal = (stock.price * 1.012).toFixed(2);
+    const lowVal = (stock.price * 0.988).toFixed(2);
+    const prevVal = (stock.prevClose || stock.price).toFixed(2);
+
+    const statOpen = document.getElementById("sheetStatOpen");
+    const statHigh = document.getElementById("sheetStatHigh");
+    const statLow = document.getElementById("sheetStatLow");
+    const statClose = document.getElementById("sheetStatClose");
+
+    if (statOpen) statOpen.textContent = `₹${openVal}`;
+    if (statHigh) statHigh.textContent = `₹${highVal}`;
+    if (statLow) statLow.textContent = `₹${lowVal}`;
+    if (statClose) statClose.textContent = `₹${prevVal}`;
+
+    // Action button listeners
+    if (btnBuy) {
+      btnBuy.onclick = () => {
+        this.closeStockSheet();
+        this.openOrderModal(stock.symbol, "BUY");
+      };
+    }
+    if (btnSell) {
+      btnSell.onclick = () => {
+        this.closeStockSheet();
+        this.openOrderModal(stock.symbol, "SELL");
+      };
+    }
+    if (btnChart) {
+      btnChart.onclick = () => {
+        this.closeStockSheet();
+        this.switchMobileTab("dashboard");
+        this.viewStockChart(stock.symbol);
+      };
+    }
+    if (btnOc) {
+      btnOc.onclick = () => {
+        this.closeStockSheet();
+        this.openOptionChainModal(stock.symbol);
+      };
+    }
+    if (btnDepth) {
+      btnDepth.onclick = () => {
+        this.closeStockSheet();
+        this.openDepthModal(stock.symbol);
+      };
+    }
+
+    if (sheet) sheet.classList.add("open");
+  }
+
+  closeStockSheet() {
+    const sheet = document.getElementById("mobileStockSheetBackdrop");
+    if (sheet) sheet.classList.remove("open");
   }
 }
 

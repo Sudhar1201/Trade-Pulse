@@ -39,6 +39,21 @@
 
 ---
 
+## 📱 Zerodha Kite Mobile App Experience (< 768px Viewport)
+
+The terminal automatically activates a dedicated **Zerodha Kite Mobile Design System** on phones and small viewports:
+- **Zero Visual Overlap:** Watchlist and Workspace views are strictly mutually exclusive. Tapping a tab renders only that view full-screen between the header and bottom bar.
+- **5-Tab Fixed Bottom Navigation Bar:**
+  1. 📑 **Watchlist** — Full-height watchlist with search and sub-watchlists (1, 2, 3, 4, 5 F&O).
+  2. 📋 **Orders** — Executed & AMO Pending orders with active counter badges.
+  3. 💼 **Portfolio** — Segmented control switching between **Holdings** and **Positions**.
+  4. 📊 **Dashboard** — Market overview, candlestick chart, and equity/derivative statistics.
+  5. 👤 **Profile / Funds** — Available Margin (₹20,000.00), user client ID, test tick toggle, and account switch.
+- **Stock Action Drawer (Bottom Sheet):** Tapping any stock in the watchlist opens a sliding action sheet featuring large side-by-side **BUY** & **SELL** buttons, View Chart, Option Chain, Market Depth, and live OHLC stats.
+- **Responsive Auth Portal:** Sign up and login modal with full touch scrolling, 16px non-zooming inputs, prominent close `✕` button, and 1-click guest demo.
+
+---
+
 ## 🚀 How to Run the Website
 
 ### Option 1: Direct Browser Launch (Immediate)
