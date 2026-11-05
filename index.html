@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TradePulse — India's Premier Paper Trading Terminal</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%232563eb'/><path d='M20 55 L38 55 L48 25 L60 75 L70 55 L85 55' stroke='white' stroke-width='8' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+</head>
+<body>
+
+  <!-- Top Navigation & Live Indices Bar -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="brand-logo" id="brandLogo">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+        </div>
+        <span class="brand-name">Trade<span>Pulse</span></span>
+        <div class="market-status-pill closed" id="marketStatusPill" title="NSE/BSE Market Hours: 09:15 AM - 03:30 PM IST (Mon-Fri)">
+          <span class="status-dot"></span>
+          <span id="marketStatusText">MARKET CLOSED</span>
+        </div>
+      </div>
+
+      <!-- Live Indices Bar -->
+      <div class="indices-ticker" id="indicesTicker">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <div class="header-right">
+      <nav>
+        <ul class="nav-tabs">
+          <li><a href="#dashboard" class="nav-link active" data-view="dashboard">Dashboard</a></li>
+          <li>
+            <a href="#orders" class="nav-link" data-view="orders">
+              Orders <span class="badge-count" id="badgeOpenOrders" style="display:none;">0</span>
+            </a>
+          </li>
+          <li>
+            <a href="#holdings" class="nav-link" data-view="holdings">
+              Holdings <span class="badge-count" id="badgeHoldingsCount" style="display:none;">0</span>
+            </a>
+          </li>
+          <li>
+            <a href="#positions" class="nav-link" data-view="positions">
+              Positions <span class="badge-count" id="badgePositionsCount" style="display:none;">0</span>
+            </a>
+          </li>
+          <li><a href="#funds" class="nav-link" data-view="funds">Funds</a></li>
+        </ul>
+      </nav>
+
+      <!-- Launch Option Chain (Calls & Puts) -->
+      <button class="btn-nav-oc" onclick="app.openOptionChainModal('NIFTY 50')" title="Open Interactive Option Chain (Call / Put)">
+        ⚡ Option Chain
+      </button>
+
+      <!-- User Margin Pill & Controls -->
+      <div class="user-quick-funds" onclick="app.switchView('funds')" title="Click to view Funds & Margin breakdown">
+        <span class="quick-funds-label">Demo Margin</span>
+        <span class="quick-funds-value" id="quickMarginVal">₹20,000.00</span>
+      </div>
+
+      <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle Light / Dark Mode">
+        🌙
+      </button>
+
+      <!-- User Profile Menu & Dropdown -->
+      <div class="user-profile-menu" id="userProfileMenuBtn" title="User Profile & Account Settings">
+        <div class="user-avatar" id="userAvatarText">TP</div>
+        
+        <!-- User Dropdown Menu Card -->
+        <div class="user-dropdown-card" id="userDropdownCard">
+          <div class="user-dropdown-header">
+            <div class="user-dropdown-name" id="menuUserName">Demo Learner</div>
+            <div class="user-dropdown-email" id="menuUserEmail">demo@tradepulse.app</div>
+            <div class="user-dropdown-clientid" id="menuUserClientId">Client ID: TP7842</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 2px;font-size:11.5px;color:var(--text-secondary);border-bottom:1px solid var(--border-light);">
+              <span>Force Live Ticks (Demo):</span>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" id="forceMarketTickToggle" style="accent-color:var(--tp-blue);">
+                <span style="font-size:10.5px;">Test Ticks</span>
+              </label>
+            </div>
+            <button class="btn-secondary" style="width:100%;text-align:left;font-size:12px;padding:6px 10px;" onclick="app.openAuthModal('signup')">
+              ✨ Sign Up New Account
+            </button>
+            <button class="btn-danger" style="width:100%;font-size:12px;padding:7px 10px;" id="logoutBtn">
+              🚪 Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Application Body -->
+  <main class="app-container">
+    
+    <!-- LEFT PANE: Watchlist (Tabs 1-5, Live Search, Hover B/S, Depth, Chart) -->
+    <aside class="watchlist-pane">
+      
+      <!-- Search Filter Bar -->
+      <div class="watchlist-search-box">
+        <div class="search-input-wrap">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input 
+            type="text" 
+            id="watchlistSearchInput" 
+            class="watchlist-search-input" 
+            placeholder="Search e.g. NIFTY CE, LT 3600, KVB PE..."
+            autocomplete="off"
+          >
+          <span class="search-count-pill" id="watchlistCountPill">8 / 50</span>
+        </div>
+
+        <!-- Search Overlay Results Dropdown -->
+        <div class="search-results-overlay" id="searchResultsOverlay" style="display: none;"></div>
+      </div>
+
+      <!-- Watchlist Tabs 1 to 5 (Tab 5 for F&O Options) -->
+      <div class="watchlist-tabs">
+        <div class="wl-tab active" data-wl="1">1</div>
+        <div class="wl-tab" data-wl="2">2</div>
+        <div class="wl-tab" data-wl="3">3</div>
+        <div class="wl-tab" data-wl="4">4</div>
+        <div class="wl-tab" data-wl="5" title="Options (Call & Put) contracts">5 F&amp;O</div>
+      </div>
+
+      <!-- Stock Rows List -->
+      <ul class="watchlist-items-list" id="watchlistItemsList">
+        <!-- Rendered dynamically by app.js -->
+      </ul>
+    </aside>
+
+    <!-- RIGHT PANE: Main Workspace Views -->
+    <section class="workspace-pane">
+
+      <!-- ==================== 1. DASHBOARD VIEW ==================== -->
+      <div class="view-section active" id="view-dashboard">
+        <div class="page-title-row">
+          <div>
+            <h1 class="page-title">Market Dashboard</h1>
+            <p class="page-subtitle">Welcome to your demo learning workspace. Live Indian NSE equity &amp; options paper trading.</p>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn-nav-oc" onclick="app.openOptionChainModal('NIFTY 50')">
+              ⚡ Option Chain (CE / PE)
+            </button>
+            <button class="btn-primary" onclick="app.openOrderModal('LT', 'BUY')">
+              + Quick Buy L&amp;T
+            </button>
+          </div>
+        </div>
+
+        <!-- Colorful KPI Grid -->
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-card-cyan">
+            <div class="kpi-label">Available Demo Margin</div>
+            <div class="kpi-val text-green" id="dashAvailableCash">₹20,000.00</div>
+            <div class="kpi-sub">Virtual cash for practice</div>
+          </div>
+          <div class="kpi-card kpi-card-amber">
+            <div class="kpi-label">Used Margin</div>
+            <div class="kpi-val text-amber" id="dashUsedMargin">₹0.00</div>
+            <div class="kpi-sub">Allocated in stocks &amp; options</div>
+          </div>
+          <div class="kpi-card kpi-card-purple">
+            <div class="kpi-label">Holdings Value (CNC)</div>
+            <div class="kpi-val text-purple" id="dashHoldingsVal">₹0.00</div>
+            <div class="kpi-sub">Current portfolio valuation</div>
+          </div>
+          <div class="kpi-card kpi-card-emerald">
+            <div class="kpi-label">Intraday &amp; F&amp;O MTM P&amp;L</div>
+            <div class="kpi-val" id="dashPositionsMTM">₹0.00</div>
+            <div class="kpi-sub">Live open positions return</div>
+          </div>
+        </div>
+
+        <!-- Interactive Canvas Chart Card -->
+        <div class="chart-container-card">
+          <div class="chart-header-row">
+            <div class="chart-stock-meta">
+              <span class="chart-stock-symbol" id="chartStockSymbol">LT (Larsen &amp; Toubro Ltd.)</span>
+              <span class="chart-stock-ltp" id="chartStockLTP">₹4,018.50</span>
+              <span class="font-semibold text-green" id="chartStockChange">+74.10 (+1.88%)</span>
+            </div>
+
+            <div class="chart-controls">
+              <button class="btn-secondary" id="toggleChartTypeBtn" style="padding:5px 12px;font-size:12px;">
+                📊 Candlestick
+              </button>
+              <button class="chart-tf-btn active" data-tf="1D">1D</button>
+              <button class="chart-tf-btn" data-tf="5D">5D</button>
+              <button class="chart-tf-btn" data-tf="1M">1M</button>
+              <button class="chart-tf-btn" data-tf="1Y">1Y</button>
+            </div>
+          </div>
+
+          <div style="position: relative; width: 100%; height: 350px;">
+            <canvas id="mainStockChartCanvas"></canvas>
+          </div>
+        </div>
+
+        <!-- Educational Demo Highlights -->
+        <div class="demo-info-banner">
+          <div class="demo-info-text">
+            <h3>🎓 Zero-Risk Demo Trading: Stocks &amp; Options (Call / Put)</h3>
+            <p>Every newly registered account automatically receives <b>₹20,000.00</b> demo capital. Trade authentic Indian stocks (L&amp;T, KVB, Reliance, TCS) and trade <b>Call (CE) &amp; Put (PE) options</b> on NIFTY, SENSEX, and all stocks with realistic tick execution.</p>
+          </div>
+          <button class="btn-primary" onclick="app.openOptionChainModal('NIFTY 50')">Explore Option Chain</button>
+        </div>
+      </div>
+
+      <!-- ==================== 2. ORDERS VIEW ==================== -->
+      <div class="view-section" id="view-orders">
+        <div class="page-title-row">
+          <div>
+            <h1 class="page-title">Order Book</h1>
+            <p class="page-subtitle">Track your open limit orders and executed demo market trades (Stocks &amp; Options).</p>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-toolbar">
+            <input type="text" class="table-filter-input" placeholder="Search orders...">
+            <span style="font-size:12px;color:var(--text-muted);">Real-time execution engine active</span>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Type</th>
+                <th>Instrument</th>
+                <th>Product</th>
+                <th>Order Type</th>
+                <th class="text-right">Qty</th>
+                <th class="text-right">Price</th>
+                <th>Status</th>
+                <th class="text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="ordersTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+
+          <div class="empty-state" id="ordersEmptyState" style="display:none;">
+            <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <div class="empty-title">No orders placed yet</div>
+            <div class="empty-desc">Select any stock or option contract from your watchlist and tap <b>[B]</b> to execute your first demo order.</div>
+            <button class="btn-primary" onclick="app.openOrderModal('LT', 'BUY')">Place Demo Order</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== 3. HOLDINGS VIEW ==================== -->
+      <div class="view-section" id="view-holdings">
+        <div class="page-title-row">
+          <div>
+            <h1 class="page-title">Holdings (CNC)</h1>
+            <p class="page-subtitle">Long-term equity investment portfolio with live valuation updates.</p>
+          </div>
+          <button class="btn-primary" onclick="app.openOrderModal('KVB', 'BUY')">
+            + Buy KVB Share
+          </button>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-card-cyan">
+            <div class="kpi-label">Total Investment</div>
+            <div class="kpi-val" id="holdingsTotalInvested">₹0.00</div>
+            <div class="kpi-sub">Cost basis</div>
+          </div>
+          <div class="kpi-card kpi-card-purple">
+            <div class="kpi-label">Current Value</div>
+            <div class="kpi-val text-purple" id="holdingsCurrentVal">₹0.00</div>
+            <div class="kpi-sub">Live valuation</div>
+          </div>
+          <div class="kpi-card kpi-card-emerald">
+            <div class="kpi-label">Total P&amp;L</div>
+            <div class="kpi-val" id="holdingsTotalPL">₹0.00 (0.00%)</div>
+            <div class="kpi-sub">Overall profit/loss</div>
+          </div>
+          <div class="kpi-card kpi-card-amber">
+            <div class="kpi-label">Day's P&amp;L</div>
+            <div class="kpi-val" id="holdingsDayPL">₹0.00</div>
+            <div class="kpi-sub">Change today</div>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-toolbar">
+            <input type="text" class="table-filter-input" placeholder="Search holdings...">
+            <span style="font-size:12px;color:var(--text-muted);">Real-time price recalculation</span>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Instrument</th>
+                <th class="text-right">Qty</th>
+                <th class="text-right">Avg. Cost</th>
+                <th class="text-right">LTP</th>
+                <th class="text-right">Cur. Value</th>
+                <th class="text-right">P&amp;L</th>
+                <th class="text-right">Day Chg</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="holdingsTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+
+          <div class="empty-state" id="holdingsEmptyState" style="display:none;">
+            <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+            </svg>
+            <div class="empty-title">You don't have any holdings yet</div>
+            <div class="empty-desc">Use your <b>₹20,000 demo capital</b> to buy CNC equity shares like L&amp;T or Karur Vysya Bank (KVB).</div>
+            <button class="btn-primary" onclick="app.openOrderModal('KVB', 'BUY')">Buy KVB Share</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== 4. POSITIONS VIEW ==================== -->
+      <div class="view-section" id="view-positions">
+        <div class="page-title-row">
+          <div>
+            <h1 class="page-title">Positions (Intraday &amp; F&amp;O Options)</h1>
+            <p class="page-subtitle">Intraday trading with 5x leverage and Options (Call &amp; Put) with live MTM P&amp;L.</p>
+          </div>
+          <button class="btn-danger" onclick="app.exitAllPositions()">
+            Square Off All Positions
+          </button>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-card-rose">
+            <div class="kpi-label">Live MTM P&amp;L</div>
+            <div class="kpi-val" id="positionsTotalMTM">₹0.00</div>
+            <div class="kpi-sub">Updates continuously with market ticks</div>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-toolbar">
+            <input type="text" class="table-filter-input" placeholder="Search positions...">
+            <span style="font-size:12px;color:var(--text-muted);">Real-time Mark-to-Market</span>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Instrument</th>
+                <th class="text-right">Net Qty</th>
+                <th class="text-right">Avg. Price</th>
+                <th class="text-right">LTP</th>
+                <th class="text-right">P&amp;L</th>
+                <th class="text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="positionsTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+
+          <div class="empty-state" id="positionsEmptyState" style="display:none;">
+            <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+              <polyline points="17 6 23 6 23 12"></polyline>
+            </svg>
+            <div class="empty-title">No open positions</div>
+            <div class="empty-desc">Open the <b>Option Chain</b> to buy Call (CE) / Put (PE) options, or trade MIS intraday stocks.</div>
+            <button class="btn-primary" onclick="app.openOptionChainModal('NIFTY 50')">Open Option Chain</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== 5. FUNDS VIEW ==================== -->
+      <div class="view-section" id="view-funds">
+        <div class="page-title-row">
+          <div>
+            <h1 class="page-title">Funds &amp; Demo Capital</h1>
+            <p class="page-subtitle">Virtual balance for learning and risk-free trading skill development.</p>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn-secondary" id="addDemoCashBtn">+ Add Demo ₹10,000</button>
+            <button class="btn-primary" id="resetDemoFundsBtn">Reset to ₹20,000</button>
+          </div>
+        </div>
+
+        <div class="demo-info-banner">
+          <div class="demo-info-text">
+            <h3>🛡️ Demo Trading Sandbox Environment</h3>
+            <p>This terminal is purpose-built for learning market skills. Real financial deposits and withdrawals are intentionally disabled. You are supplied with <b>₹20,000.00 virtual capital</b> upon signup, with unlimited free reloads anytime.</p>
+          </div>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-card-emerald">
+            <div class="kpi-label">Available Margin</div>
+            <div class="kpi-val text-green" id="fundsAvailableMargin">₹20,000.00</div>
+            <div class="kpi-sub">Ready to trade stocks &amp; options</div>
+          </div>
+          <div class="kpi-card kpi-card-amber">
+            <div class="kpi-label">Used Margin</div>
+            <div class="kpi-val text-amber" id="fundsUsedMargin">₹0.00</div>
+            <div class="kpi-sub">Blocked in open orders / positions</div>
+          </div>
+          <div class="kpi-card kpi-card-purple">
+            <div class="kpi-label">Total Cash Balance</div>
+            <div class="kpi-val text-purple" id="fundsTotalCash">₹20,000.00</div>
+            <div class="kpi-sub">Total account equity</div>
+          </div>
+          <div class="kpi-card kpi-card-cyan">
+            <div class="kpi-label">Initial Credit</div>
+            <div class="kpi-val text-blue" id="fundsInitialCapital">₹20,000.00</div>
+            <div class="kpi-sub">Default signup allowance</div>
+          </div>
+        </div>
+
+        <div class="table-card" style="padding: 24px;">
+          <h3 style="font-size:16px;font-weight:800;margin-bottom:14px;color:var(--text-dark);">Demo Account Features &amp; Rules</h3>
+          <ul style="list-style-type: none; display: flex; flex-direction: column; gap: 12px; font-size: 13.5px; color: var(--text-secondary);">
+            <li style="display:flex;align-items:center;gap:10px;">
+              <span style="color:var(--tp-green-bright);font-weight:bold;font-size:16px;">✓</span> <b>₹20,000 Initial Demo Capital:</b> Credited automatically to every newcomer upon sign up.
+            </li>
+            <li style="display:flex;align-items:center;gap:10px;">
+              <span style="color:var(--tp-green-bright);font-weight:bold;font-size:16px;">✓</span> <b>Call &amp; Put Options Trading:</b> Complete Options Chain for NIFTY, SENSEX, NIFTY BANK, L&amp;T, KVB, Reliance, and all stocks!
+            </li>
+            <li style="display:flex;align-items:center;gap:10px;">
+              <span style="color:var(--tp-green-bright);font-weight:bold;font-size:16px;">✓</span> <b>Authentic NSE Equities:</b> Accurate prices matching live Zerodha market rates (L&amp;T ₹4,018.50, KVB ₹343.90, Reliance ₹1,311.20, TCS ₹2,436.00, HDFC Bank ₹757.20, Bank Nifty ₹57,050.25, etc.).
+            </li>
+            <li style="display:flex;align-items:center;gap:10px;">
+              <span style="color:var(--tp-green-bright);font-weight:bold;font-size:16px;">✓</span> <b>Product Types:</b> Support for CNC (Cash &amp; Carry Long-Term), MIS (Intraday with 5x leverage), and NRML (Options).
+            </li>
+            <li style="display:flex;align-items:center;gap:10px;">
+              <span style="color:var(--tp-green-bright);font-weight:bold;font-size:16px;">✓</span> <b>Zero Real Money Risk:</b> No deposit or withdrawal required. Practice strategies freely.
+            </li>
+          </ul>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- ==================== ORDER WINDOW MODAL (Zerodha Kite Style) ==================== -->
+  <div class="modal-backdrop" id="orderModalBackdrop">
+    <div class="order-modal">
+      <div class="order-modal-header buy-theme" id="orderModalHeader">
+        <div class="order-modal-title">
+          <div class="order-stock-symbol" id="modalStockSymbol">LT NSE</div>
+          <div class="order-stock-price" id="modalStockLTP">LTP: ₹4,018.50</div>
+        </div>
+
+        <div class="side-switch-wrap">
+          <button class="side-toggle-btn active" data-side="BUY">BUY</button>
+          <button class="side-toggle-btn" data-side="SELL">SELL</button>
+        </div>
+      </div>
+
+      <div class="order-modal-body">
+        <!-- AMO Notice Banner (Active during off-market hours) -->
+        <div class="amo-notice-banner" id="amoNoticeBanner" style="display:none;">
+          <span>🌙</span>
+          <span>Market is closed (09:15 AM – 03:30 PM IST). Placing <b>AMO (After Market Order)</b> to execute at 09:15 AM.</span>
+        </div>
+
+        <div class="product-type-row">
+          <div class="product-radio-label selected" id="productRadioCNC" data-product="CNC">
+            <input type="radio" name="productRadio" checked style="accent-color:var(--tp-blue);">
+            <div>
+              <div id="productCNCLabel">CNC <span style="font-size:10.5px;color:var(--text-muted);">(Longterm)</span></div>
+            </div>
+          </div>
+          <div class="product-radio-label" id="productRadioMIS" data-product="MIS">
+            <input type="radio" name="productRadio" style="accent-color:var(--tp-blue);">
+            <div>
+              <div>MIS <span style="font-size:10.5px;color:var(--tp-orange);">(Intraday)</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="order-type-tabs">
+          <div class="order-type-tab active" data-type="MARKET">Market</div>
+          <div class="order-type-tab" data-type="LIMIT">Limit</div>
+        </div>
+
+        <div class="input-row">
+          <div class="input-group">
+            <label class="input-label" id="qtyInputLabel">Qty</label>
+            <input type="number" id="orderQtyInput" class="order-input" value="1" min="1" step="1">
+            <span id="orderLotSizeHint" style="font-size:10.5px;color:var(--text-muted);margin-top:2px;display:none;"></span>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Price</label>
+            <input type="number" id="orderPriceInput" class="order-input" value="4018.50" step="0.05" disabled>
+          </div>
+        </div>
+
+        <div class="margin-info-box">
+          <div class="margin-needed-wrap">
+            <span id="marginNeededText">Margin req:</span>
+            <span class="text-blue" id="marginRequiredVal">₹4,018.50</span>
+          </div>
+          <div class="margin-avail-wrap">
+            <span>Available:</span>
+            <span id="marginAvailableVal" style="font-weight:700;color:var(--text-dark);">₹20,000.00</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="order-modal-footer">
+        <button class="btn-cancel-modal" id="closeOrderModalBtn">Cancel</button>
+        <button class="btn-submit-order buy-action" id="submitOrderBtn">Buy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MARKET DEPTH MODAL ==================== -->
+  <div class="modal-backdrop" id="depthModalBackdrop">
+    <div class="depth-modal">
+      <div class="depth-header">
+        <div id="depthModalTitle">
+          <span class="font-bold">LT</span> <span class="exchange-tag">NSE</span>
+        </div>
+        <button class="btn-secondary" id="closeDepthModalBtn" style="padding:2px 8px;">✕</button>
+      </div>
+
+      <div class="depth-body">
+        <div class="depth-grid">
+          <div>
+            <div style="font-size:11.5px;font-weight:800;color:var(--tp-blue);margin-bottom:6px;">BID (BUYERS)</div>
+            <table class="depth-table bid-table">
+              <thead>
+                <tr>
+                  <th>Price</th>
+                  <th class="text-right">Orders</th>
+                  <th class="text-right">Qty</th>
+                </tr>
+              </thead>
+              <tbody id="depthBidsBody"></tbody>
+            </table>
+            <div class="depth-totals">
+              <span>Total Bid Qty</span>
+              <span id="depthTotalBidQty" class="text-blue">0</span>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-size:11.5px;font-weight:800;color:var(--tp-orange);margin-bottom:6px;">ASK (SELLERS)</div>
+            <table class="depth-table ask-table">
+              <thead>
+                <tr>
+                  <th>Price</th>
+                  <th class="text-right">Orders</th>
+                  <th class="text-right">Qty</th>
+                </tr>
+              </thead>
+              <tbody id="depthAsksBody"></tbody>
+            </table>
+            <div class="depth-totals">
+              <span>Total Ask Qty</span>
+              <span id="depthTotalAskQty" class="text-red">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-box">
+            <span class="stat-box-label">Open</span>
+            <span class="stat-box-val" id="depthOpenVal">₹0.00</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-box-label">High</span>
+            <span class="stat-box-val text-green" id="depthHighVal">₹0.00</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-box-label">Low</span>
+            <span class="stat-box-val text-red" id="depthLowVal">₹0.00</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-box-label">Prev. Close</span>
+            <span class="stat-box-val" id="depthCloseVal">₹0.00</span>
+          </div>
+        </div>
+
+        <div class="range-slider-wrap">
+          <div class="range-label-row">
+            <span>52W Low: <b id="depth52WLow">₹0.00</b></span>
+            <span>52W High: <b id="depth52WHigh">₹0.00</b></span>
+          </div>
+          <div class="range-bar-track">
+            <div class="range-bar-fill" id="depth52WFill" style="width: 50%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== OPTION CHAIN MODAL (CALLS [CE] & PUTS [PE]) ==================== -->
+  <div class="modal-backdrop" id="optionChainModalBackdrop">
+    <div class="option-chain-modal">
+      <div class="oc-header">
+        <div class="oc-title-wrap">
+          <span style="font-size:17px;font-weight:800;">⚡ Option Chain</span>
+          
+          <!-- Select Underlying Instrument -->
+          <select id="ocUnderlyingSelect" class="oc-underlying-select" onchange="app.renderOptionChain(this.value)">
+            <!-- Options populated dynamically -->
+          </select>
+
+          <!-- Spot Price live indicator -->
+          <div class="oc-spot-pill" id="ocSpotPill">
+            Spot: <span id="ocSpotPrice">₹24,423.65</span>
+          </div>
+        </div>
+
+        <button class="btn-secondary" id="closeOptionChainBtn" style="padding:4px 10px;background:rgba(255,255,255,0.1);color:#ffffff;border-color:rgba(255,255,255,0.2);">
+          ✕ Close
+        </button>
+      </div>
+
+      <div class="oc-body">
+        <table class="oc-table">
+          <thead>
+            <tr>
+              <th colspan="4" class="th-calls">CALL OPTIONS (CE)</th>
+              <th class="th-strike">STRIKE</th>
+              <th colspan="4" class="th-puts">PUT OPTIONS (PE)</th>
+            </tr>
+            <tr>
+              <th class="th-calls">OI</th>
+              <th class="th-calls">Volume</th>
+              <th class="th-calls">LTP</th>
+              <th class="th-calls">Action</th>
+              <th class="th-strike">Price</th>
+              <th class="th-puts">Action</th>
+              <th class="th-puts">LTP</th>
+              <th class="th-puts">Volume</th>
+              <th class="th-puts">OI</th>
+            </tr>
+          </thead>
+          <tbody id="optionChainTableBody">
+            <!-- Rendered dynamically by app.js -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== COLORFUL AUTH PORTAL (SIGN UP / LOGIN) ==================== -->
+  <div class="modal-backdrop" id="authModalBackdrop">
+    <div class="auth-modal-card">
+      <div class="auth-banner">
+        <h2>Trade<span>Pulse</span> Terminal</h2>
+        <p style="font-size:13px;opacity:0.9;">Sign in or create your risk-free demo account</p>
+        
+        <div class="auth-reward-pill">
+          <span style="font-size:18px;">🎁</span>
+          <div>
+            <div class="reward-amount">₹20,000.00</div>
+            <div class="reward-text">Free Virtual Demo Capital on Signup</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="auth-nav-tabs">
+        <button class="auth-tab-btn active" id="authTabSignup" onclick="app.setAuthTab('signup')">
+          Sign Up
+        </button>
+        <button class="auth-tab-btn" id="authTabLogin" onclick="app.setAuthTab('login')">
+          Log In
+        </button>
+      </div>
+
+      <div class="auth-body">
+        <!-- SIGN UP FORM (Name, mail, password, confirm password) -->
+        <form id="signupForm" class="auth-form" onsubmit="event.preventDefault(); app.handleSignUpSubmit();">
+          <div class="auth-form-group">
+            <label class="auth-label">Full Name</label>
+            <input type="text" id="signupName" class="auth-input" placeholder="e.g. Rahul Sharma" required autocomplete="name">
+          </div>
+
+          <div class="auth-form-group">
+            <label class="auth-label">Email Address (mail)</label>
+            <input type="email" id="signupEmail" class="auth-input" placeholder="trader@tradepulse.app" required autocomplete="email">
+          </div>
+
+          <div class="auth-form-group">
+            <label class="auth-label">Password</label>
+            <input type="password" id="signupPassword" class="auth-input" placeholder="At least 4 characters" required minlength="4" autocomplete="new-password">
+          </div>
+
+          <div class="auth-form-group">
+            <label class="auth-label">Confirm Password</label>
+            <input type="password" id="signupConfirmPassword" class="auth-input" placeholder="Re-enter password" required minlength="4" autocomplete="new-password">
+          </div>
+
+          <button type="submit" class="auth-submit-btn">
+            Create Demo Account & Claim ₹20,000
+          </button>
+          
+          <button type="button" class="auth-guest-shortcut" onclick="app.handleGuestLogin()">
+            ⚡ Instant 1-Click Guest Demo
+          </button>
+        </form>
+
+        <!-- LOGIN FORM (mail, password) -->
+        <form id="loginForm" class="auth-form" style="display:none;" onsubmit="event.preventDefault(); app.handleLoginSubmit();">
+          <div class="auth-form-group">
+            <label class="auth-label">Email Address (mail)</label>
+            <input type="email" id="loginEmail" class="auth-input" placeholder="trader@tradepulse.app" required autocomplete="email">
+          </div>
+
+          <div class="auth-form-group">
+            <label class="auth-label">Password</label>
+            <input type="password" id="loginPassword" class="auth-input" placeholder="Enter your password" required autocomplete="current-password">
+          </div>
+
+          <button type="submit" class="auth-submit-btn">
+            Log In to Demo Account
+          </button>
+
+          <button type="button" class="auth-guest-shortcut" onclick="app.handleGuestLogin()">
+            ⚡ Instant 1-Click Guest Demo
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/engine.js"></script>
+  <script src="js/chart.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
