@@ -56,6 +56,9 @@ class TradingStore {
     }
 
     this.activeWatchlist = 1;
+
+    // Immediately resolve and execute any lingering AMO PENDING orders so trading works smoothly!
+    this.executeAllPendingAMOOrders();
   }
 
   loadUserData(email) {
@@ -251,14 +254,14 @@ class TradingStore {
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-    const isMarketCurrentlyOpen = typeof engine !== "undefined" ? engine.getMarketStatus().isOpen : false;
-    const isAMO = !isMarketCurrentlyOpen;
-
-    const isImmediate = isMarketCurrentlyOpen && (
-      orderType === "MARKET" || (orderType === "LIMIT" && (
+    // In our practice paper trading terminal, MARKET orders ALWAYS execute immediately
+    // so learners and clients can practice buying & selling at any time without being blocked!
+    // LIMIT orders execute immediately if price condition matches, else stay OPEN
+    const isImmediate = (orderType === "MARKET") || (
+      orderType === "LIMIT" && (
         (side === "BUY" && stock.price <= price) ||
         (side === "SELL" && stock.price >= price)
-      ))
+      )
     );
 
     const order = {
@@ -273,15 +276,15 @@ class TradingStore {
       quantity,
       price: executionPrice,
       triggerPrice,
-      status: isImmediate ? "COMPLETE" : (isAMO ? "AMO PENDING" : "OPEN"),
+      status: isImmediate ? "COMPLETE" : "OPEN",
       marginUsed: marginReq,
       isOption,
       optionType: stock.optionType || null,
       strike: stock.strike || null,
-      isAMO,
+      isAMO: false,
       statusMessage: isImmediate 
         ? `Executed at ₹${executionPrice.toFixed(2)}` 
-        : (isAMO ? `AMO: Queued for market open (09:15 AM)` : "Pending market trigger")
+        : `Limit order pending at ₹${executionPrice.toFixed(2)}`
     };
 
     this.orders.unshift(order);
@@ -300,12 +303,10 @@ class TradingStore {
       success: true,
       order,
       isImmediate,
-      isAMO,
+      isAMO: false,
       message: isImmediate
         ? `${side} ${quantity} ${symbol} executed at ₹${executionPrice.toFixed(2)}`
-        : (isAMO 
-            ? `AMO Placed: ${side} ${quantity} ${symbol} @ ₹${executionPrice.toFixed(2)} (Queued for 09:15 AM)`
-            : `Limit order placed: ${side} ${quantity} ${symbol} at ₹${executionPrice.toFixed(2)}`)
+        : `Limit order placed: ${side} ${quantity} ${symbol} at ₹${executionPrice.toFixed(2)}`
     };
   }
 
@@ -486,7 +487,7 @@ class TradingStore {
 
   cancelOrder(orderId) {
     const order = this.orders.find(o => o.id === orderId);
-    if (!order || order.status !== "OPEN") return false;
+    if (!order || (order.status !== "OPEN" && order.status !== "AMO PENDING")) return false;
 
     order.status = "CANCELLED";
     order.statusMessage = "Cancelled by user";
@@ -499,6 +500,33 @@ class TradingStore {
 
     this.saveAll();
     return true;
+  }
+
+  executeOrder(orderId) {
+    const order = this.orders.find(o => o.id === orderId);
+    if (!order || (order.status !== "OPEN" && order.status !== "AMO PENDING")) return false;
+
+    const stock = STOCKS_MAP.get(order.symbol);
+    const execPrice = stock ? stock.price : order.price;
+
+    order.status = "COMPLETE";
+    order.price = execPrice;
+    order.statusMessage = `Executed at ₹${execPrice.toFixed(2)}`;
+
+    this.processExecution(order);
+    this.saveAll();
+    return true;
+  }
+
+  executeAllPendingAMOOrders() {
+    const pending = this.orders.filter(o => o.status === "AMO PENDING" || (o.status === "OPEN" && o.orderType === "MARKET"));
+    let count = 0;
+    pending.forEach(o => {
+      if (this.executeOrder(o.id)) {
+        count++;
+      }
+    });
+    return count;
   }
 
   exitPosition(positionId) {

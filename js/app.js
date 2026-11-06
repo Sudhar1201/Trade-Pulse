@@ -685,13 +685,16 @@ class App {
       this.refreshOptionChainRows();
     }
 
-    if (this.currentView === "holdings") {
+    if (this.currentView === "holdings" || (window.innerWidth <= 768 && this.activeMobileTab === "portfolio")) {
       this.updateHoldingsLiveData();
-    } else if (this.currentView === "positions") {
+    }
+    if (this.currentView === "positions" || (window.innerWidth <= 768 && this.activeMobileTab === "portfolio")) {
       this.updatePositionsLiveData();
-    } else if (this.currentView === "dashboard") {
+    }
+    if (this.currentView === "dashboard") {
       this.updateDashboardKPIs();
     }
+    this.updateNavBadges();
   }
 
   // --- Order Modal Logic (Supports Equities & Options) ---
@@ -805,10 +808,37 @@ class App {
 
     if (priceInput) priceInput.value = stock.price.toFixed(2);
 
+    // If selling, pre-fill with held quantity and matching product
+    if (side === "SELL") {
+      const existingHolding = store.holdings.find(h => h.symbol === stock.symbol);
+      const existingPos = store.positions.find(p => p.symbol === stock.symbol && p.status === "OPEN");
+      if (existingHolding) {
+        if (qtyInput) qtyInput.value = existingHolding.quantity;
+        this.activeProduct = "CNC";
+        document.querySelectorAll(".product-radio-label").forEach((l) => {
+          l.classList.toggle("selected", l.getAttribute("data-product") === "CNC");
+        });
+      } else if (existingPos) {
+        if (qtyInput) qtyInput.value = Math.abs(existingPos.quantity);
+        this.activeProduct = existingPos.product;
+        document.querySelectorAll(".product-radio-label").forEach((l) => {
+          l.classList.toggle("selected", l.getAttribute("data-product") === existingPos.product);
+        });
+      }
+    }
+
     const marketStatus = engine.getMarketStatus();
     const amoBanner = document.getElementById("amoNoticeBanner");
     if (amoBanner) {
-      amoBanner.style.display = marketStatus.isOpen ? "none" : "flex";
+      if (marketStatus.isOpen) {
+        amoBanner.style.display = "none";
+      } else {
+        amoBanner.style.display = "flex";
+        amoBanner.innerHTML = `
+          <span style="font-size:16px;">💡</span>
+          <span><b>Demo Practice Mode:</b> Market is closed (09:15 - 15:30 IST). Demo market orders execute immediately at LTP for continuous practice!</span>
+        `;
+      }
     }
 
     this.setOrderSide(side);
@@ -827,7 +857,6 @@ class App {
     const header = document.getElementById("orderModalHeader");
     const submitBtn = document.getElementById("submitOrderBtn");
     const sideBtns = document.querySelectorAll(".side-toggle-btn");
-    const isMarketOpen = engine.getMarketStatus().isOpen;
 
     sideBtns.forEach((b) => {
       b.classList.toggle("active", b.getAttribute("data-side") === side);
@@ -838,8 +867,7 @@ class App {
     }
 
     if (submitBtn) {
-      const actionName = isMarketOpen ? side : `Place AMO (${side})`;
-      submitBtn.textContent = `${actionName} ${this.selectedStock ? this.selectedStock.symbol : ''}`;
+      submitBtn.textContent = `${side} ${this.selectedStock ? this.selectedStock.symbol : ''}`;
       submitBtn.className = `btn-submit-order ${side === "BUY" ? "buy-action" : "sell-action"}`;
     }
 
@@ -908,6 +936,17 @@ class App {
       window.showToast(result.message, "success");
       this.closeOrderModal();
       this.renderUserQuickFunds();
+
+      // On mobile screen, automatically navigate to Portfolio tab so the user immediately sees their trade and live P&L
+      if (window.innerWidth <= 768) {
+        if (this.activeProduct === "CNC") {
+          this.switchMobileTab("portfolio");
+          this.switchView("holdings");
+        } else {
+          this.switchMobileTab("portfolio");
+          this.switchView("positions");
+        }
+      }
       this.renderActiveView();
     } else {
       sounds.playError();
@@ -1217,6 +1256,8 @@ class App {
   renderHoldings() {
     const tbody = document.getElementById("holdingsTableBody");
     const emptyState = document.getElementById("holdingsEmptyState");
+    const mobCards = document.getElementById("holdingsMobileCards");
+    const mobPnlEl = document.getElementById("mobHoldingsTotalPL");
     const totalInvestedEl = document.getElementById("holdingsTotalInvested");
     const curValEl = document.getElementById("holdingsCurrentVal");
     const totalPLEl = document.getElementById("holdingsTotalPL");
@@ -1227,6 +1268,20 @@ class App {
     if (store.holdings.length === 0) {
       tbody.innerHTML = "";
       if (emptyState) emptyState.style.display = "block";
+      if (mobCards) {
+        mobCards.innerHTML = `
+          <div class="mob-empty-msg">
+            <div style="font-size:24px;margin-bottom:6px;">💼</div>
+            <div style="font-weight:700;color:var(--text-dark);margin-bottom:4px;">No holdings yet</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Use your ₹20,000 demo capital to buy CNC shares from watchlist.</div>
+            <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="app.switchMobileTab('watchlist')">Browse Watchlist</button>
+          </div>
+        `;
+      }
+      if (mobPnlEl) {
+        mobPnlEl.className = "mob-pnl-val";
+        mobPnlEl.textContent = "₹0.00 (0.00%)";
+      }
       if (totalInvestedEl) totalInvestedEl.textContent = "₹0.00";
       if (curValEl) curValEl.textContent = "₹0.00";
       if (totalPLEl) totalPLEl.textContent = "₹0.00 (0.00%)";
@@ -1239,13 +1294,14 @@ class App {
     let totalInvested = 0;
     let totalCurrent = 0;
     let totalDayPL = 0;
+    const cardsHtml = [];
 
     tbody.innerHTML = store.holdings.map((h) => {
       const stock = STOCKS_MAP.get(h.symbol);
       const ltp = stock ? stock.price : h.avgPrice;
       const curVal = h.quantity * ltp;
       const pl = curVal - h.investedValue;
-      const plPct = (pl / h.investedValue) * 100;
+      const plPct = h.investedValue > 0 ? (pl / h.investedValue) * 100 : 0;
       const isPositive = pl >= 0;
 
       const dayChange = stock ? stock.change * h.quantity : 0;
@@ -1254,6 +1310,42 @@ class App {
       totalInvested += h.investedValue;
       totalCurrent += curVal;
       totalDayPL += dayChange;
+
+      cardsHtml.push(`
+        <div class="mob-pos-card">
+          <div class="mob-pos-top">
+            <div class="mob-pos-left">
+              <span class="badge-tag tag-cnc">CNC</span>
+              <span class="mob-pos-symbol">${h.symbol}</span>
+            </div>
+            <div class="mob-pos-pnl ${isPositive ? 'text-green' : 'text-red'}">
+              ${isPositive ? '+' : ''}₹${pl.toFixed(2)} (${isPositive ? '+' : ''}${plPct.toFixed(2)}%)
+            </div>
+          </div>
+          <div class="mob-pos-mid">
+            <div class="mob-pos-stat">
+              <span class="stat-lbl">Qty</span>
+              <span class="stat-val font-bold">${h.quantity}</span>
+            </div>
+            <div class="mob-pos-stat">
+              <span class="stat-lbl">Avg Cost</span>
+              <span class="stat-val">₹${h.avgPrice.toFixed(2)}</span>
+            </div>
+            <div class="mob-pos-stat">
+              <span class="stat-lbl">LTP</span>
+              <span class="stat-val font-bold">₹${ltp.toFixed(2)}</span>
+            </div>
+            <div class="mob-pos-stat">
+              <span class="stat-lbl">Cur. Value</span>
+              <span class="stat-val font-bold">₹${curVal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+            </div>
+          </div>
+          <div class="mob-pos-actions">
+            <button class="mob-btn-exit" onclick="app.openOrderModal('${h.symbol}', 'SELL')">Exit / Sell</button>
+            <button class="mob-btn-add" onclick="app.openOrderModal('${h.symbol}', 'BUY')">+ Add More</button>
+          </div>
+        </div>
+      `);
 
       return `
         <tr>
@@ -1279,6 +1371,8 @@ class App {
       `;
     }).join("");
 
+    if (mobCards) mobCards.innerHTML = cardsHtml.join("");
+
     const totalPL = totalCurrent - totalInvested;
     const totalPLPct = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
 
@@ -1292,6 +1386,10 @@ class App {
       dayPLEl.className = `kpi-val ${totalDayPL >= 0 ? 'text-green' : 'text-red'}`;
       dayPLEl.textContent = `${totalDayPL >= 0 ? '+' : ''}₹${totalDayPL.toFixed(2)}`;
     }
+    if (mobPnlEl) {
+      mobPnlEl.className = `mob-pnl-val ${totalPL >= 0 ? 'text-green' : 'text-red'}`;
+      mobPnlEl.textContent = `${totalPL >= 0 ? '+' : ''}₹${totalPL.toFixed(2)} (${totalPLPct.toFixed(2)}%)`;
+    }
   }
 
   updateHoldingsLiveData() {
@@ -1303,6 +1401,8 @@ class App {
     const tbody = document.getElementById("positionsTableBody");
     const emptyState = document.getElementById("positionsEmptyState");
     const mtmKpi = document.getElementById("positionsTotalMTM");
+    const mobCards = document.getElementById("positionsMobileCards");
+    const mobPnlEl = document.getElementById("mobPositionsTotalPL");
 
     if (!tbody) return;
 
@@ -1311,9 +1411,23 @@ class App {
     if (openPositions.length === 0) {
       tbody.innerHTML = "";
       if (emptyState) emptyState.style.display = "block";
+      if (mobCards) {
+        mobCards.innerHTML = `
+          <div class="mob-empty-msg">
+            <div style="font-size:24px;margin-bottom:6px;">⚡</div>
+            <div style="font-weight:700;color:var(--text-dark);margin-bottom:4px;">No open positions</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Trade Call & Put options or MIS intraday stocks to see live MTM P&L.</div>
+            <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="app.openOptionChainModal('NIFTY 50')">Open Option Chain</button>
+          </div>
+        `;
+      }
       if (mtmKpi) {
         mtmKpi.className = "kpi-val";
         mtmKpi.textContent = "₹0.00";
+      }
+      if (mobPnlEl) {
+        mobPnlEl.className = "mob-pnl-val";
+        mobPnlEl.textContent = "₹0.00";
       }
       return;
     }
@@ -1321,6 +1435,7 @@ class App {
     if (emptyState) emptyState.style.display = "none";
 
     let totalMTM = 0;
+    const cardsHtml = [];
 
     tbody.innerHTML = openPositions.map((pos) => {
       const stock = STOCKS_MAP.get(pos.symbol);
@@ -1331,6 +1446,40 @@ class App {
       const isProfitable = pnl >= 0;
 
       totalMTM += pnl;
+
+      cardsHtml.push(`
+        <div class="mob-pos-card">
+          <div class="mob-pos-top">
+            <div class="mob-pos-left">
+              <span class="badge-tag ${pos.isOption ? (pos.optionType === 'CE' ? 'badge-ce' : 'badge-pe') : 'tag-mis'}">
+                ${pos.isOption ? `${pos.optionType} (${pos.product})` : 'MIS 5x'}
+              </span>
+              <span class="mob-pos-symbol">${pos.symbol}</span>
+            </div>
+            <div class="mob-pos-pnl ${isProfitable ? 'text-green' : 'text-red'}">
+              ${isProfitable ? '+' : ''}₹${pnl.toFixed(2)}
+            </div>
+          </div>
+          <div class="mob-pos-mid">
+            <div class="mob-pos-stat">
+              <span class="stat-lbl">Qty</span>
+              <span class="stat-val ${isLong ? 'text-blue' : 'text-red'}">${pos.quantity > 0 ? '+' : ''}${pos.quantity}</span>
+            </div>
+            <div class="mob-pos-stat">
+              <span class="stat-lbl">Avg Price</span>
+              <span class="stat-val">₹${pos.avgPrice.toFixed(2)}</span>
+            </div>
+            <div class="mob-pos-stat">
+              <span class="stat-lbl">LTP</span>
+              <span class="stat-val font-bold">₹${ltp.toFixed(2)}</span>
+            </div>
+          </div>
+          <div class="mob-pos-actions">
+            <button class="mob-btn-exit" onclick="app.exitPosition('${pos.id}')">Exit Position</button>
+            <button class="mob-btn-add" onclick="app.openOrderModal('${pos.symbol}', 'BUY')">+ Add More</button>
+          </div>
+        </div>
+      `);
 
       return `
         <tr>
@@ -1358,9 +1507,15 @@ class App {
       `;
     }).join("");
 
+    if (mobCards) mobCards.innerHTML = cardsHtml.join("");
+
     if (mtmKpi) {
       mtmKpi.className = `kpi-val ${totalMTM >= 0 ? 'text-green' : 'text-red'}`;
       mtmKpi.textContent = `${totalMTM >= 0 ? '+' : ''}₹${totalMTM.toFixed(2)}`;
+    }
+    if (mobPnlEl) {
+      mobPnlEl.className = `mob-pnl-val ${totalMTM >= 0 ? 'text-green' : 'text-red'}`;
+      mobPnlEl.textContent = `${totalMTM >= 0 ? '+' : ''}₹${totalMTM.toFixed(2)}`;
     }
   }
 
@@ -1396,21 +1551,76 @@ class App {
   renderOrders() {
     const tbody = document.getElementById("ordersTableBody");
     const emptyState = document.getElementById("ordersEmptyState");
+    const mobCards = document.getElementById("ordersMobileCards");
 
     if (!tbody) return;
 
     if (store.orders.length === 0) {
       tbody.innerHTML = "";
       if (emptyState) emptyState.style.display = "block";
+      if (mobCards) {
+        mobCards.innerHTML = `
+          <div class="mob-empty-msg">
+            <div style="font-size:24px;margin-bottom:6px;">📋</div>
+            <div style="font-weight:700;color:var(--text-dark);margin-bottom:4px;">No orders placed yet</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Execute demo trades on stocks or options.</div>
+            <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="app.switchMobileTab('watchlist')">Browse Watchlist</button>
+          </div>
+        `;
+      }
       return;
     }
 
     if (emptyState) emptyState.style.display = "none";
 
+    const cardsHtml = [];
+
     tbody.innerHTML = store.orders.map((o) => {
       const isComplete = o.status === "COMPLETE";
       const isAMO = o.status === "AMO PENDING";
       const isOpen = o.status === "OPEN";
+
+      cardsHtml.push(`
+        <div class="mob-pos-card">
+          <div class="mob-pos-top">
+            <div class="mob-pos-left">
+              <span class="badge-tag ${o.side === 'BUY' ? 'tag-cnc' : 'tag-mis'}" style="font-weight:800;">${o.side}</span>
+              <span class="badge-tag ${o.product === 'CNC' || o.product === 'NRML' ? 'tag-cnc' : 'tag-mis'}">${o.product}</span>
+              <span class="mob-pos-symbol">${o.symbol}</span>
+            </div>
+            <div>
+              <span class="badge-tag ${isComplete ? 'tag-complete' : isAMO ? 'tag-amo' : isOpen ? 'tag-open' : 'tag-cancelled'}">
+                ${o.status}
+              </span>
+            </div>
+          </div>
+          <div class="mob-pos-mid">
+            <div class="mob-pos-stat">
+              <span class="stat-lbl">Type</span>
+              <span class="stat-val font-bold">${o.orderType}</span>
+            </div>
+            <div class="mob-pos-stat">
+              <span class="stat-lbl">Qty</span>
+              <span class="stat-val font-bold">${o.quantity}</span>
+            </div>
+            <div class="mob-pos-stat">
+              <span class="stat-lbl">Price</span>
+              <span class="stat-val font-bold">₹${o.price.toFixed(2)}</span>
+            </div>
+            <div class="mob-pos-stat">
+              <span class="stat-lbl">Time</span>
+              <span class="stat-val" style="font-size:11px;">${o.time}</span>
+            </div>
+          </div>
+          ${o.statusMessage ? `<div style="font-size:11.5px;color:var(--text-secondary);padding:0 4px 6px;">${o.statusMessage}</div>` : ''}
+          ${(isOpen || isAMO) ? `
+            <div class="mob-pos-actions">
+              <button class="mob-btn-execute" onclick="app.forceExecuteOrder('${o.id}')">⚡ Execute Now</button>
+              <button class="mob-btn-exit" onclick="app.cancelOrder('${o.id}')">Cancel</button>
+            </div>
+          ` : ''}
+        </div>
+      `);
 
       return `
         <tr>
@@ -1438,11 +1648,29 @@ class App {
             <span style="font-size:11px;color:var(--text-secondary);margin-left:6px;">${o.statusMessage || ''}</span>
           </td>
           <td class="text-right">
-            ${(isOpen || isAMO) ? `<button class="btn-danger" style="padding:3px 8px;font-size:11px;" onclick="app.cancelOrder('${o.id}')">Cancel</button>` : '—'}
+            ${(isOpen || isAMO) ? `
+              <button class="btn-primary" style="padding:3px 8px;font-size:11px;margin-right:4px;" onclick="app.forceExecuteOrder('${o.id}')" title="Instantly execute order">Execute</button>
+              <button class="btn-danger" style="padding:3px 8px;font-size:11px;" onclick="app.cancelOrder('${o.id}')">Cancel</button>
+            ` : '—'}
           </td>
         </tr>
       `;
     }).join("");
+
+    if (mobCards) mobCards.innerHTML = cardsHtml.join("");
+  }
+
+  forceExecuteOrder(orderId) {
+    if (store.executeOrder(orderId)) {
+      window.playChime();
+      window.showToast("Order executed successfully!", "success");
+      this.renderUserQuickFunds();
+      this.renderOrders();
+      this.renderPositions();
+      this.renderHoldings();
+    } else {
+      window.showToast("Order could not be executed.", "error");
+    }
   }
 
   cancelOrder(orderId) {

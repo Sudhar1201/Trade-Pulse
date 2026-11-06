@@ -1981,6 +1981,14 @@ body {
   display: none;
 }
 
+.mobile-pnl-summary-bar {
+  display: none;
+}
+
+.mobile-portfolio-cards {
+  display: none;
+}
+
 .modal-close-icon {
   position: absolute;
   top: 12px;
@@ -2715,6 +2723,198 @@ body {
 
   .table-card table {
     min-width: 480px;
+  }
+
+  /* Mobile Total P&L Summary Bar */
+  .mobile-pnl-summary-bar {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.95));
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+
+  .mob-pnl-lbl {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .mob-pnl-val {
+    font-size: 17px;
+    font-weight: 800;
+    font-family: var(--font-number);
+  }
+
+  /* Mobile Portfolio & Order Cards */
+  .mobile-portfolio-cards {
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+    padding: 4px 0 12px 0;
+  }
+
+  /* On mobile screens, hide wide raw desktop tables for orders, holdings, and positions to prevent horizontal blowout */
+  #view-orders .data-table,
+  #view-holdings .data-table,
+  #view-positions .data-table {
+    display: none !important;
+  }
+
+  .mob-pos-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 13px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .mob-pos-card:active {
+    transform: scale(0.99);
+  }
+
+  .mob-pos-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .mob-pos-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mob-pos-symbol {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-dark);
+  }
+
+  .mob-pos-pnl {
+    font-size: 15px;
+    font-weight: 800;
+    font-family: var(--font-number);
+  }
+
+  .mob-pos-mid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    padding: 8px 10px;
+    background: #f8fafc;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(0, 0, 0, 0.03);
+  }
+
+  .mob-pos-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .stat-lbl {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .stat-val {
+    font-size: 12px;
+    color: var(--text-dark);
+    font-weight: 600;
+  }
+
+  .mob-pos-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 2px;
+  }
+
+  .mob-btn-exit {
+    flex: 1;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.08);
+    color: #ef4444;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+  }
+
+  .mob-btn-exit:hover,
+  .mob-btn-exit:active {
+    background: #ef4444;
+    color: #ffffff;
+  }
+
+  .mob-btn-add {
+    flex: 1;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(14, 165, 233, 0.35);
+    background: rgba(14, 165, 233, 0.08);
+    color: #0284c7;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+  }
+
+  .mob-btn-add:hover,
+  .mob-btn-add:active {
+    background: #0284c7;
+    color: #ffffff;
+  }
+
+  .mob-btn-execute {
+    flex: 1;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+  }
+
+  .mob-btn-execute:hover,
+  .mob-btn-execute:active {
+    background: #10b981;
+    color: #ffffff;
+  }
+
+  .mob-empty-msg {
+    text-align: center;
+    padding: 28px 16px;
+    background: #ffffff;
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--border-color);
+    color: var(--text-secondary);
   }
 }
 

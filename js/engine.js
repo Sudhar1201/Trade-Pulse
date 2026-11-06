@@ -92,6 +92,11 @@ class MarketEngine {
     this.notifyStatusListeners(status);
 
     if (status.isOpen) {
+      // Execute any pending AMO orders when market is active
+      if (this.store) {
+        this.store.executeAllPendingAMOOrders();
+      }
+
       if (!this.timer) {
         // Run tick cycle every 1.5s while market is OPEN
         this.timer = setInterval(() => {
@@ -233,11 +238,13 @@ class MarketEngine {
   }
 
   checkPendingOrders(stock) {
-    const openOrders = this.store.orders.filter(o => o.symbol === stock.symbol && o.status === "OPEN");
+    const pendingOrders = this.store.orders.filter(o => o.symbol === stock.symbol && (o.status === "OPEN" || o.status === "AMO PENDING"));
 
-    openOrders.forEach(order => {
+    pendingOrders.forEach(order => {
       let shouldExecute = false;
-      if (order.side === "BUY" && stock.price <= order.price) {
+      if (order.orderType === "MARKET" || order.status === "AMO PENDING") {
+        shouldExecute = true;
+      } else if (order.side === "BUY" && stock.price <= order.price) {
         shouldExecute = true;
       } else if (order.side === "SELL" && stock.price >= order.price) {
         shouldExecute = true;
@@ -252,7 +259,7 @@ class MarketEngine {
         this.store.saveAll();
 
         if (window.showToast) {
-          window.showToast(`Order Triggered: ${order.side} ${order.quantity} ${order.symbol} @ ₹${stock.price.toFixed(2)}`, "success");
+          window.showToast(`Order Executed: ${order.side} ${order.quantity} ${order.symbol} @ ₹${stock.price.toFixed(2)}`, "success");
         }
         if (window.playChime) {
           window.playChime();
