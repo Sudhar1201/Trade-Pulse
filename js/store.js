@@ -59,6 +59,7 @@ class TradingStore {
 
     // Immediately resolve and execute any lingering AMO PENDING orders so trading works smoothly!
     this.executeAllPendingAMOOrders();
+    this.reconcileFunds();
   }
 
   loadUserData(email) {
@@ -67,12 +68,16 @@ class TradingStore {
       availableCash: INITIAL_DEMO_CAPITAL,
       usedMargin: 0.00,
       totalBalance: INITIAL_DEMO_CAPITAL,
-      initialCapital: INITIAL_DEMO_CAPITAL
+      initialCapital: INITIAL_DEMO_CAPITAL,
+      realizedPnL: 0.00
     });
     this.holdings = this.load(STORAGE_KEYS.HOLDINGS_PREFIX + key, []);
     this.positions = this.load(STORAGE_KEYS.POSITIONS_PREFIX + key, []);
     this.orders = this.load(STORAGE_KEYS.ORDERS_PREFIX + key, []);
     
+    // Reconcile funds immediately on load to release any stuck margins and compute realized profits
+    this.reconcileFunds();
+
     // Load watchlists and ensure valid existing symbols
     let loadedWatchlists = this.load(STORAGE_KEYS.WATCHLISTS_PREFIX + key, null);
     if (!loadedWatchlists || !loadedWatchlists[5] || !loadedWatchlists[5].some(s => s.includes("57000") || s.includes("24400"))) {
@@ -343,6 +348,7 @@ class TradingStore {
           const releasedMargin = +(closedQty * pos.avgPrice).toFixed(2);
           this.funds.availableCash += (releasedMargin + realizedPL);
           this.funds.usedMargin = Math.max(0, this.funds.usedMargin - releasedMargin);
+          this.funds.realizedPnL = +( (this.funds.realizedPnL || 0) + realizedPL ).toFixed(2);
 
           if (closedQty === currentAbsQty) {
             pos.status = "CLOSED";
@@ -363,20 +369,20 @@ class TradingStore {
         this.positions.push({
           id: "POS-" + Math.floor(1000 + Math.random() * 9000),
           symbol,
-          name: stock.name,
-          exchange: stock.exchange,
+          name: stock ? stock.name : symbol,
+          exchange: stock ? stock.exchange : "NSE",
           product: product || "NRML",
           quantity: side === "BUY" ? quantity : -quantity,
           avgPrice: price,
           marginBlocked: marginUsed,
           status: "OPEN",
           isOption: true,
-          optionType: stock.optionType,
-          strike: stock.strike
+          optionType: stock ? stock.optionType : null,
+          strike: stock ? stock.strike : null
         });
       }
 
-      this.recalculateTotalBalance();
+      this.reconcileFunds();
       return;
     }
 
@@ -396,8 +402,8 @@ class TradingStore {
         } else {
           this.holdings.push({
             symbol,
-            name: stock.name,
-            exchange: stock.exchange,
+            name: stock ? stock.name : symbol,
+            exchange: stock ? stock.exchange : "NSE",
             quantity,
             avgPrice: price,
             investedValue: +(quantity * price).toFixed(2)
@@ -407,13 +413,15 @@ class TradingStore {
         const existingIdx = this.holdings.findIndex(h => h.symbol === symbol);
         if (existingIdx !== -1) {
           const h = this.holdings[existingIdx];
-          const proceed = quantity * price;
-          const costBasis = quantity * h.avgPrice;
+          const soldQty = Math.min(quantity, h.quantity);
+          const proceed = +(soldQty * price).toFixed(2);
+          const costBasis = +(soldQty * h.avgPrice).toFixed(2);
+          const realizedProfit = +(proceed - costBasis).toFixed(2);
 
-          this.funds.availableCash += proceed;
-          this.funds.usedMargin = Math.max(0, this.funds.usedMargin - costBasis);
+          this.funds.availableCash = +(this.funds.availableCash + proceed).toFixed(2);
+          this.funds.realizedPnL = +( (this.funds.realizedPnL || 0) + realizedProfit ).toFixed(2);
 
-          h.quantity -= quantity;
+          h.quantity -= soldQty;
           if (h.quantity <= 0) {
             this.holdings.splice(existingIdx, 1);
           } else {
@@ -448,6 +456,7 @@ class TradingStore {
           const releasedMargin = +((closedQty * pos.avgPrice) / 5).toFixed(2);
           this.funds.availableCash += (releasedMargin + realizedPL);
           this.funds.usedMargin = Math.max(0, this.funds.usedMargin - releasedMargin);
+          this.funds.realizedPnL = +( (this.funds.realizedPnL || 0) + realizedPL ).toFixed(2);
 
           if (closedQty === currentAbsQty) {
             pos.status = "CLOSED";
@@ -467,8 +476,8 @@ class TradingStore {
         this.positions.push({
           id: "POS-" + Math.floor(1000 + Math.random() * 9000),
           symbol,
-          name: stock.name,
-          exchange: stock.exchange,
+          name: stock ? stock.name : symbol,
+          exchange: stock ? stock.exchange : "NSE",
           product: "MIS",
           quantity: side === "BUY" ? quantity : -quantity,
           avgPrice: price,
@@ -478,11 +487,73 @@ class TradingStore {
       }
     }
 
-    this.recalculateTotalBalance();
+    this.reconcileFunds();
+  }
+
+  reconcileFunds() {
+    if (!this.funds) {
+      this.funds = {
+        availableCash: INITIAL_DEMO_CAPITAL,
+        usedMargin: 0.00,
+        totalBalance: INITIAL_DEMO_CAPITAL,
+        initialCapital: INITIAL_DEMO_CAPITAL,
+        realizedPnL: 0.00
+      };
+    }
+
+    if (typeof this.funds.realizedPnL !== "number") {
+      let closedPosTotal = 0;
+      this.positions.forEach(p => {
+        if (p.status === "CLOSED" && typeof p.realizedPL === "number") {
+          closedPosTotal += p.realizedPL;
+        }
+      });
+      this.funds.realizedPnL = +closedPosTotal.toFixed(2);
+    }
+
+    // 1. Exact margin currently needed for active CNC holdings
+    const holdingsCost = this.holdings.reduce((sum, h) => {
+      const cost = typeof h.investedValue === "number" ? h.investedValue : (h.quantity * h.avgPrice);
+      return sum + (cost || 0);
+    }, 0);
+
+    // 2. Exact margin currently blocked for open intraday & option positions
+    const openPositionsMargin = this.positions
+      .filter(p => p.status === "OPEN")
+      .reduce((sum, p) => sum + (p.marginBlocked || 0), 0);
+
+    // 3. Exact margin blocked for open pending BUY orders
+    const pendingOrdersMargin = this.orders
+      .filter(o => o.status === "OPEN" && o.side === "BUY")
+      .reduce((sum, o) => sum + (o.marginUsed || 0), 0);
+
+    const exactUsedMargin = +(holdingsCost + openPositionsMargin + pendingOrdersMargin).toFixed(2);
+
+    // If usedMargin in store was bloated or mismatched (e.g. ₹6,314.70 stuck when 0 needed):
+    const currentUsed = +(this.funds.usedMargin || 0);
+    if (Math.abs(currentUsed - exactUsedMargin) > 0.001) {
+      const discrepancy = currentUsed - exactUsedMargin;
+      this.funds.availableCash = +( (this.funds.availableCash || 0) + discrepancy ).toFixed(2);
+      this.funds.usedMargin = exactUsedMargin;
+    }
+
+    // Baseline validation: if user has zero holdings and zero open positions, availableCash cannot be stranded lower than baseline
+    const expectedBaseCash = (this.funds.initialCapital || INITIAL_DEMO_CAPITAL) + (this.funds.realizedPnL || 0) - this.funds.usedMargin;
+    if (this.funds.availableCash < expectedBaseCash && this.holdings.length === 0 && openPositionsMargin === 0 && pendingOrdersMargin === 0) {
+      this.funds.availableCash = +expectedBaseCash.toFixed(2);
+    }
+
+    this.funds.totalBalance = +(this.funds.availableCash + this.funds.usedMargin).toFixed(2);
+    this.saveUserData();
+  }
+
+  getRealizedPnL() {
+    this.reconcileFunds();
+    return +(this.funds.realizedPnL || 0).toFixed(2);
   }
 
   recalculateTotalBalance() {
-    this.funds.totalBalance = +(this.funds.availableCash + this.funds.usedMargin).toFixed(2);
+    this.reconcileFunds();
   }
 
   cancelOrder(orderId) {
@@ -492,12 +563,7 @@ class TradingStore {
     order.status = "CANCELLED";
     order.statusMessage = "Cancelled by user";
 
-    if (order.side === "BUY") {
-      this.funds.availableCash += order.marginUsed;
-      this.funds.usedMargin = Math.max(0, this.funds.usedMargin - order.marginUsed);
-      this.recalculateTotalBalance();
-    }
-
+    this.reconcileFunds();
     this.saveAll();
     return true;
   }
@@ -565,7 +631,8 @@ class TradingStore {
       availableCash: capital,
       usedMargin: 0.00,
       totalBalance: capital,
-      initialCapital: capital
+      initialCapital: capital,
+      realizedPnL: 0.00
     };
     this.holdings = [];
     this.positions = [];

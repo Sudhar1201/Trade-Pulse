@@ -1221,34 +1221,66 @@ class App {
   }
 
   updateDashboardKPIs() {
+    store.reconcileFunds();
+
     const availEl = document.getElementById("dashAvailableCash");
     const usedEl = document.getElementById("dashUsedMargin");
     const holdingsValEl = document.getElementById("dashHoldingsVal");
     const positionsMtmEl = document.getElementById("dashPositionsMTM");
+    const positionsMtmSub = document.getElementById("dashPositionsMTMSub");
 
-    if (availEl) availEl.textContent = `₹${store.funds.availableCash.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
-    if (usedEl) usedEl.textContent = `₹${store.funds.usedMargin.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+    if (availEl) {
+      availEl.textContent = `₹${store.funds.availableCash.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+    }
+    if (usedEl) {
+      usedEl.textContent = `₹${store.funds.usedMargin.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+      const sub = usedEl.closest(".kpi-card")?.querySelector(".kpi-sub");
+      if (sub) {
+        sub.textContent = store.funds.usedMargin > 0 ? "Allocated in stocks & options" : "No margin currently blocked";
+      }
+    }
 
     let totalHoldingsCur = 0;
+    let totalHoldingsCost = 0;
     store.holdings.forEach((h) => {
       const s = STOCKS_MAP.get(h.symbol);
       const ltp = s ? s.price : h.avgPrice;
       totalHoldingsCur += h.quantity * ltp;
+      totalHoldingsCost += (h.quantity * h.avgPrice);
     });
-    if (holdingsValEl) holdingsValEl.textContent = `₹${totalHoldingsCur.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+    const holdingsUnrealizedPL = totalHoldingsCur - totalHoldingsCost;
 
-    let totalMTM = 0;
+    if (holdingsValEl) {
+      holdingsValEl.textContent = `₹${totalHoldingsCur.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+      const sub = holdingsValEl.closest(".kpi-card")?.querySelector(".kpi-sub");
+      if (sub) {
+        if (store.holdings.length > 0) {
+          sub.textContent = `${store.holdings.length} stock(s) held (${holdingsUnrealizedPL >= 0 ? '+' : ''}₹${holdingsUnrealizedPL.toFixed(2)})`;
+        } else {
+          sub.textContent = store.funds.realizedPnL !== 0 ? "Holdings sold | Cash realized" : "Current portfolio valuation";
+        }
+      }
+    }
+
+    let totalOpenMTM = 0;
     store.positions.forEach((p) => {
       if (p.status === "OPEN") {
         const s = STOCKS_MAP.get(p.symbol);
         const ltp = s ? s.price : p.avgPrice;
         const diff = p.quantity > 0 ? (ltp - p.avgPrice) : (p.avgPrice - ltp);
-        totalMTM += diff * Math.abs(p.quantity);
+        totalOpenMTM += diff * Math.abs(p.quantity);
       }
     });
+
+    const realizedPL = store.getRealizedPnL();
+    const totalNetPL = realizedPL + totalOpenMTM + holdingsUnrealizedPL;
+
     if (positionsMtmEl) {
-      positionsMtmEl.className = `kpi-val ${totalMTM >= 0 ? 'text-green' : 'text-red'}`;
-      positionsMtmEl.textContent = `${totalMTM >= 0 ? '+' : ''}₹${totalMTM.toFixed(2)}`;
+      positionsMtmEl.className = `kpi-val ${totalNetPL >= 0 ? 'text-green' : 'text-red'}`;
+      positionsMtmEl.textContent = `${totalNetPL >= 0 ? '+' : ''}₹${totalNetPL.toFixed(2)}`;
+      if (positionsMtmSub) {
+        positionsMtmSub.textContent = `Realized: ${realizedPL >= 0 ? '+' : ''}₹${realizedPL.toFixed(2)} | Live MTM: ${totalOpenMTM >= 0 ? '+' : ''}₹${totalOpenMTM.toFixed(2)}`;
+      }
     }
   }
 
@@ -1267,24 +1299,44 @@ class App {
 
     if (store.holdings.length === 0) {
       tbody.innerHTML = "";
-      if (emptyState) emptyState.style.display = "block";
+      const realizedGain = store.getRealizedPnL();
+      if (emptyState) {
+        emptyState.style.display = "block";
+        const desc = emptyState.querySelector(".empty-desc");
+        if (desc && realizedGain !== 0) {
+          desc.innerHTML = `All holdings closed. Realized profit: <b class="${realizedGain >= 0 ? 'text-green' : 'text-red'}">${realizedGain >= 0 ? '+' : ''}₹${realizedGain.toFixed(2)}</b> credited to your Available Demo Margin.`;
+        }
+      }
       if (mobCards) {
         mobCards.innerHTML = `
           <div class="mob-empty-msg">
             <div style="font-size:24px;margin-bottom:6px;">💼</div>
-            <div style="font-weight:700;color:var(--text-dark);margin-bottom:4px;">No holdings yet</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Use your ₹20,000 demo capital to buy CNC shares from watchlist.</div>
+            <div style="font-weight:700;color:var(--text-dark);margin-bottom:4px;">No active holdings</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">${realizedGain !== 0 ? `Realized profit: <b class="${realizedGain >= 0 ? 'text-green' : 'text-red'}">${realizedGain >= 0 ? '+' : ''}₹${realizedGain.toFixed(2)}</b> (Credited to Available Margin)` : 'Use your demo capital to buy CNC equity shares from the watchlist.'}</div>
             <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="app.switchMobileTab('watchlist')">Browse Watchlist</button>
           </div>
         `;
       }
       if (mobPnlEl) {
-        mobPnlEl.className = "mob-pnl-val";
-        mobPnlEl.textContent = "₹0.00 (0.00%)";
+        if (realizedGain !== 0) {
+          mobPnlEl.className = `mob-pnl-val ${realizedGain >= 0 ? 'text-green' : 'text-red'}`;
+          mobPnlEl.textContent = `${realizedGain >= 0 ? '+' : ''}₹${realizedGain.toFixed(2)} (Realized)`;
+        } else {
+          mobPnlEl.className = "mob-pnl-val";
+          mobPnlEl.textContent = "₹0.00 (0.00%)";
+        }
       }
       if (totalInvestedEl) totalInvestedEl.textContent = "₹0.00";
       if (curValEl) curValEl.textContent = "₹0.00";
-      if (totalPLEl) totalPLEl.textContent = "₹0.00 (0.00%)";
+      if (totalPLEl) {
+        if (realizedGain !== 0) {
+          totalPLEl.className = `kpi-val ${realizedGain >= 0 ? 'text-green' : 'text-red'}`;
+          totalPLEl.textContent = `${realizedGain >= 0 ? '+' : ''}₹${realizedGain.toFixed(2)} (Realized)`;
+        } else {
+          totalPLEl.className = "kpi-val";
+          totalPLEl.textContent = "₹0.00 (0.00%)";
+        }
+      }
       if (dayPLEl) dayPLEl.textContent = "₹0.00";
       return;
     }
@@ -1410,24 +1462,41 @@ class App {
 
     if (openPositions.length === 0) {
       tbody.innerHTML = "";
-      if (emptyState) emptyState.style.display = "block";
+      const realizedGain = store.getRealizedPnL();
+      if (emptyState) {
+        emptyState.style.display = "block";
+        const desc = emptyState.querySelector(".empty-desc");
+        if (desc && realizedGain !== 0) {
+          desc.innerHTML = `All positions squared off. Realized P&L: <b class="${realizedGain >= 0 ? 'text-green' : 'text-red'}">${realizedGain >= 0 ? '+' : ''}₹${realizedGain.toFixed(2)}</b> credited to your Available Demo Margin.`;
+        }
+      }
       if (mobCards) {
         mobCards.innerHTML = `
           <div class="mob-empty-msg">
             <div style="font-size:24px;margin-bottom:6px;">⚡</div>
             <div style="font-weight:700;color:var(--text-dark);margin-bottom:4px;">No open positions</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Trade Call & Put options or MIS intraday stocks to see live MTM P&L.</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">${realizedGain !== 0 ? `Realized P&L: <b class="${realizedGain >= 0 ? 'text-green' : 'text-red'}">${realizedGain >= 0 ? '+' : ''}₹${realizedGain.toFixed(2)}</b> (All margin released)` : 'Trade Call & Put options or MIS intraday stocks to see live MTM P&L.'}</div>
             <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="app.openOptionChainModal('NIFTY 50')">Open Option Chain</button>
           </div>
         `;
       }
       if (mtmKpi) {
-        mtmKpi.className = "kpi-val";
-        mtmKpi.textContent = "₹0.00";
+        if (realizedGain !== 0) {
+          mtmKpi.className = `kpi-val ${realizedGain >= 0 ? 'text-green' : 'text-red'}`;
+          mtmKpi.textContent = `${realizedGain >= 0 ? '+' : ''}₹${realizedGain.toFixed(2)} (Realized)`;
+        } else {
+          mtmKpi.className = "kpi-val";
+          mtmKpi.textContent = "₹0.00";
+        }
       }
       if (mobPnlEl) {
-        mobPnlEl.className = "mob-pnl-val";
-        mobPnlEl.textContent = "₹0.00";
+        if (realizedGain !== 0) {
+          mobPnlEl.className = `mob-pnl-val ${realizedGain >= 0 ? 'text-green' : 'text-red'}`;
+          mobPnlEl.textContent = `${realizedGain >= 0 ? '+' : ''}₹${realizedGain.toFixed(2)} (Realized)`;
+        } else {
+          mobPnlEl.className = "mob-pnl-val";
+          mobPnlEl.textContent = "₹0.00";
+        }
       }
       return;
     }
