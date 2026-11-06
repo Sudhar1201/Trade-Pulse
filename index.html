@@ -289,10 +289,16 @@
           </button>
         </div>
 
-        <!-- Mobile Total P&L Strip -->
+        <!-- Mobile Total P&L Strip with compact Invested / Current stats -->
         <div class="mobile-pnl-summary-bar" id="mobHoldingsPnlBar">
-          <div class="mob-pnl-lbl">Total Holdings P&amp;L</div>
-          <div class="mob-pnl-val text-green" id="mobHoldingsTotalPL">₹0.00 (0.00%)</div>
+          <div class="mob-pnl-left-block">
+            <div class="mob-pnl-lbl">Total Holdings P&amp;L</div>
+            <div class="mob-pnl-val text-green" id="mobHoldingsTotalPL">₹0.00 (0.00%)</div>
+          </div>
+          <div class="mob-pnl-right-block">
+            <div class="mob-pnl-stat-line"><span>Invested:</span> <b id="mobHoldingsInvested">₹0.00</b></div>
+            <div class="mob-pnl-stat-line"><span>Current:</span> <b id="mobHoldingsCurrent">₹0.00</b></div>
+          </div>
         </div>
 
         <div class="page-title-row">
@@ -379,10 +385,16 @@
           </button>
         </div>
 
-        <!-- Mobile Total Live MTM P&L Strip -->
+        <!-- Mobile Total Live MTM P&L Strip with Option Chain shortcut -->
         <div class="mobile-pnl-summary-bar" id="mobPositionsPnlBar">
-          <div class="mob-pnl-lbl">Total Live MTM P&amp;L</div>
-          <div class="mob-pnl-val text-green" id="mobPositionsTotalPL">₹0.00</div>
+          <div class="mob-pnl-left-block">
+            <div class="mob-pnl-lbl">Total Positions P&amp;L</div>
+            <div class="mob-pnl-val text-green" id="mobPositionsTotalPL">₹0.00</div>
+          </div>
+          <div class="mob-pnl-right-block">
+            <button class="btn-oc-pill-mob" onclick="app.openOptionChainModal('NIFTY 50')">⚡ Option Chain</button>
+            <button class="btn-danger-pill-mob" onclick="app.exitAllPositions()">Square Off</button>
+          </div>
         </div>
 
         <div class="page-title-row">

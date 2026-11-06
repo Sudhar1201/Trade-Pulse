@@ -1290,6 +1290,8 @@ class App {
     const emptyState = document.getElementById("holdingsEmptyState");
     const mobCards = document.getElementById("holdingsMobileCards");
     const mobPnlEl = document.getElementById("mobHoldingsTotalPL");
+    const mobInvestedEl = document.getElementById("mobHoldingsInvested");
+    const mobCurrentEl = document.getElementById("mobHoldingsCurrent");
     const totalInvestedEl = document.getElementById("holdingsTotalInvested");
     const curValEl = document.getElementById("holdingsCurrentVal");
     const totalPLEl = document.getElementById("holdingsTotalPL");
@@ -1326,6 +1328,8 @@ class App {
           mobPnlEl.textContent = "₹0.00 (0.00%)";
         }
       }
+      if (mobInvestedEl) mobInvestedEl.textContent = "₹0.00";
+      if (mobCurrentEl) mobCurrentEl.textContent = "₹0.00";
       if (totalInvestedEl) totalInvestedEl.textContent = "₹0.00";
       if (curValEl) curValEl.textContent = "₹0.00";
       if (totalPLEl) {
@@ -1442,6 +1446,10 @@ class App {
       mobPnlEl.className = `mob-pnl-val ${totalPL >= 0 ? 'text-green' : 'text-red'}`;
       mobPnlEl.textContent = `${totalPL >= 0 ? '+' : ''}₹${totalPL.toFixed(2)} (${totalPLPct.toFixed(2)}%)`;
     }
+    const mobInvestedEl = document.getElementById("mobHoldingsInvested");
+    const mobCurrentEl = document.getElementById("mobHoldingsCurrent");
+    if (mobInvestedEl) mobInvestedEl.textContent = `₹${totalInvested.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+    if (mobCurrentEl) mobCurrentEl.textContent = `₹${totalCurrent.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
   }
 
   updateHoldingsLiveData() {

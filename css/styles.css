@@ -2277,44 +2277,20 @@ body {
     gap: 4px;
   }
 
-  .indices-ticker {
-    display: flex;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-    gap: 6px;
-    padding: 2px 0;
-    max-width: 140px;
-  }
-  .indices-ticker::-webkit-scrollbar {
-    display: none;
+  /* On mobile header, hide indices ticker to prevent overlap with theme button and avatar */
+  .app-header .indices-ticker {
+    display: none !important;
   }
 
-  .index-item {
-    padding: 2px 6px;
-    font-size: 10px;
-    gap: 4px;
-    flex-shrink: 0;
-  }
-
-  .index-name {
-    font-size: 9.5px;
-  }
-
-  .index-price {
-    font-size: 10px;
-  }
-
-  .index-change {
-    font-size: 9px;
-  }
-
-  /* Hide desktop header tabs & pills on mobile */
+  /* Hide desktop header tabs & pills on mobile (keep buttons accessible in views) */
   .header-right nav {
     display: none !important;
   }
-  .btn-nav-oc {
+  .app-header .btn-nav-oc {
     display: none !important;
+  }
+  .btn-nav-oc {
+    display: inline-flex !important;
   }
   .user-quick-funds {
     display: none !important;
@@ -2368,7 +2344,7 @@ body {
     height: 100% !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
-    padding: 12px 14px 28px 14px !important;
+    padding: 10px 12px calc(85px + env(safe-area-inset-bottom, 0px)) 12px !important;
   }
 
   /* 3. Watchlist Pane on Mobile */
@@ -2725,21 +2701,73 @@ body {
     min-width: 480px;
   }
 
+  /* On mobile screens, hide bulky desktop title and 4-card KPI grid in Portfolio views to bring cards directly into view */
+  #view-holdings .page-title-row,
+  #view-positions .page-title-row,
+  #view-orders .page-title-row,
+  #view-holdings .kpi-grid,
+  #view-positions .kpi-grid {
+    display: none !important;
+  }
+
+  .table-card {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  .table-toolbar {
+    display: flex !important;
+    padding: 4px 0 8px 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  .table-toolbar span {
+    display: none !important;
+  }
+
+  .table-filter-input {
+    width: 100% !important;
+    max-width: 100% !important;
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-dark) !important;
+    border-radius: var(--radius-sm);
+    height: 38px;
+    font-size: 13px;
+    padding: 0 12px;
+  }
+
   /* Mobile Total P&L Summary Bar */
   .mobile-pnl-summary-bar {
     display: flex !important;
     justify-content: space-between;
     align-items: center;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.95));
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    padding: 12px 16px;
-    margin-bottom: 14px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-md) !important;
+    padding: 10px 14px !important;
+    margin-bottom: 10px !important;
+    box-shadow: var(--shadow-sm) !important;
+    gap: 10px;
+  }
+
+  .mob-pnl-left-block {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .mob-pnl-right-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
   }
 
   .mob-pnl-lbl {
-    font-size: 11.5px;
+    font-size: 11px;
     font-weight: 700;
     color: var(--text-secondary);
     text-transform: uppercase;
@@ -2747,17 +2775,56 @@ body {
   }
 
   .mob-pnl-val {
-    font-size: 17px;
+    font-size: 16.5px;
     font-weight: 800;
     font-family: var(--font-number);
+  }
+
+  .mob-pnl-stat-line {
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  .mob-pnl-stat-line b {
+    color: var(--text-dark);
+    font-family: var(--font-number);
+    font-weight: 700;
+  }
+
+  .btn-oc-pill-mob {
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+    border: 1px solid rgba(168, 85, 247, 0.4);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .btn-oc-pill-mob:active {
+    background: #a855f7;
+    color: #ffffff;
+  }
+
+  .btn-danger-pill-mob {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
   }
 
   /* Mobile Portfolio & Order Cards */
   .mobile-portfolio-cards {
     display: flex !important;
     flex-direction: column;
-    gap: 12px;
-    padding: 4px 0 12px 0;
+    gap: 10px;
+    padding: 2px 0 24px 0 !important;
   }
 
   /* On mobile screens, hide wide raw desktop tables for orders, holdings, and positions to prevent horizontal blowout */
@@ -2768,14 +2835,15 @@ body {
   }
 
   .mob-pos-card {
-    background: #ffffff;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    padding: 13px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-md) !important;
+    padding: 13px 14px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    box-shadow: var(--shadow-sm) !important;
+    color: var(--text-dark) !important;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
   }
 
@@ -2796,9 +2864,9 @@ body {
   }
 
   .mob-pos-symbol {
-    font-size: 14px;
+    font-size: 14.5px;
     font-weight: 800;
-    color: var(--text-dark);
+    color: var(--text-dark) !important;
   }
 
   .mob-pos-pnl {
@@ -2808,13 +2876,13 @@ body {
   }
 
   .mob-pos-mid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 6px;
-    padding: 8px 10px;
-    background: #f8fafc;
-    border-radius: var(--radius-sm);
-    border: 1px solid rgba(0, 0, 0, 0.03);
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 6px !important;
+    padding: 8px 10px !important;
+    background: var(--bg-secondary) !important;
+    border-radius: var(--radius-sm) !important;
+    border: 1px solid var(--border-color) !important;
   }
 
   .mob-pos-stat {
@@ -2832,19 +2900,19 @@ body {
 
   .stat-val {
     font-size: 12px;
-    color: var(--text-dark);
+    color: var(--text-dark) !important;
     font-weight: 600;
   }
 
   .mob-pos-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 2px;
+    display: flex !important;
+    gap: 8px !important;
+    margin-top: 2px !important;
   }
 
   .mob-btn-exit {
     flex: 1;
-    height: 36px;
+    height: 38px;
     border-radius: var(--radius-sm);
     border: 1px solid rgba(239, 68, 68, 0.35);
     background: rgba(239, 68, 68, 0.08);
@@ -2866,7 +2934,7 @@ body {
 
   .mob-btn-add {
     flex: 1;
-    height: 36px;
+    height: 38px;
     border-radius: var(--radius-sm);
     border: 1px solid rgba(14, 165, 233, 0.35);
     background: rgba(14, 165, 233, 0.08);
@@ -2888,7 +2956,7 @@ body {
 
   .mob-btn-execute {
     flex: 1;
-    height: 36px;
+    height: 38px;
     border-radius: var(--radius-sm);
     border: 1px solid rgba(16, 185, 129, 0.35);
     background: rgba(16, 185, 129, 0.1);
@@ -2911,7 +2979,7 @@ body {
   .mob-empty-msg {
     text-align: center;
     padding: 28px 16px;
-    background: #ffffff;
+    background: var(--card-bg) !important;
     border-radius: var(--radius-md);
     border: 1px dashed var(--border-color);
     color: var(--text-secondary);
