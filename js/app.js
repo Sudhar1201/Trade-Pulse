@@ -1446,8 +1446,6 @@ class App {
       mobPnlEl.className = `mob-pnl-val ${totalPL >= 0 ? 'text-green' : 'text-red'}`;
       mobPnlEl.textContent = `${totalPL >= 0 ? '+' : ''}₹${totalPL.toFixed(2)} (${totalPLPct.toFixed(2)}%)`;
     }
-    const mobInvestedEl = document.getElementById("mobHoldingsInvested");
-    const mobCurrentEl = document.getElementById("mobHoldingsCurrent");
     if (mobInvestedEl) mobInvestedEl.textContent = `₹${totalInvested.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
     if (mobCurrentEl) mobCurrentEl.textContent = `₹${totalCurrent.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
   }
@@ -1949,7 +1947,14 @@ class App {
 
 // Global App bootstrap
 let app = null;
-window.addEventListener("DOMContentLoaded", () => {
-  app = new App();
-  window.app = app;
-});
+function initTradePulseApp() {
+  if (!window.app) {
+    app = new App();
+    window.app = app;
+  }
+}
+if (document.readyState === "loading") {
+  window.addEventListener("DOMContentLoaded", initTradePulseApp);
+} else {
+  initTradePulseApp();
+}
