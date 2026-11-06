@@ -93,7 +93,7 @@ window.showToast = function (message, type = "info") {
 // 3. Main Application Class
 class App {
   constructor() {
-    this.currentView = "dashboard";
+    this.currentView = "orders";
     this.selectedStock = STOCKS_MAP.get("LT") || Array.from(STOCKS_MAP.values())[0];
     this.activeOrderSide = "BUY";
     this.activeProduct = "CNC";
@@ -299,7 +299,7 @@ class App {
 
     const brand = document.getElementById("brandLogo");
     if (brand) {
-      brand.addEventListener("click", () => this.switchView("dashboard"));
+      brand.addEventListener("click", () => this.switchView("orders"));
     }
   }
 
@@ -324,10 +324,6 @@ class App {
       this.updateMobileTabState("orders");
     } else if (viewName === "holdings" || viewName === "positions") {
       this.updateMobileTabState("portfolio");
-    } else if (viewName === "dashboard") {
-      if (document.body.getAttribute("data-mobile-tab") !== "watchlist") {
-        this.updateMobileTabState("dashboard");
-      }
     } else if (viewName === "funds") {
       this.updateMobileTabState("funds");
     }
@@ -345,9 +341,6 @@ class App {
   renderActiveView() {
     this.updateNavBadges();
     switch (this.currentView) {
-      case "dashboard":
-        this.renderDashboard();
-        break;
       case "orders":
         this.renderOrders();
         break;
@@ -595,7 +588,7 @@ class App {
             <button class="act-btn btn-buy-pill" title="Buy (B)" onclick="event.stopPropagation(); app.openOrderModal('${stock.symbol}', 'BUY');">B</button>
             <button class="act-btn btn-sell-pill" title="Sell (S)" onclick="event.stopPropagation(); app.openOrderModal('${stock.symbol}', 'SELL');">S</button>
             <button class="act-btn btn-icon-pill" title="Market Depth" onclick="event.stopPropagation(); app.openDepthModal('${stock.symbol}');">📊</button>
-            <button class="act-btn btn-icon-pill" title="View Chart" onclick="event.stopPropagation(); app.viewStockChart('${stock.symbol}');">📈</button>
+            <button class="act-btn btn-icon-pill" title="View Chart" onclick="event.stopPropagation(); app.openChartModal('${stock.symbol}');">📈</button>
             <button class="act-btn btn-icon-pill" title="Delete from watchlist" onclick="event.stopPropagation(); app.toggleWatchlistStock('${stock.symbol}');">🗑️</button>
           </div>
         </li>
@@ -614,9 +607,8 @@ class App {
       return;
     }
 
-    if (this.currentView === "dashboard") {
-      this.viewStockChart(symbol);
-    }
+    // On desktop, clicking a stock opens its interactive Chart Modal!
+    this.openChartModal(symbol);
   }
 
   // --- Real-Time Market Tick Subscriber ---
@@ -690,9 +682,6 @@ class App {
     }
     if (this.currentView === "positions" || (window.innerWidth <= 768 && this.activeMobileTab === "portfolio")) {
       this.updatePositionsLiveData();
-    }
-    if (this.currentView === "dashboard") {
-      this.updateDashboardKPIs();
     }
     this.updateNavBadges();
   }
@@ -1186,6 +1175,48 @@ class App {
         typeBtn.textContent = newType === "candle" ? "📊 Candlestick" : "📈 Line";
       });
     }
+
+    const buyBtn = document.getElementById("chartModalBuyBtn");
+    if (buyBtn) {
+      buyBtn.onclick = () => {
+        this.closeChartModal();
+        if (this.selectedStock) this.openOrderModal(this.selectedStock.symbol, "BUY");
+      };
+    }
+    const sellBtn = document.getElementById("chartModalSellBtn");
+    if (sellBtn) {
+      sellBtn.onclick = () => {
+        this.closeChartModal();
+        if (this.selectedStock) this.openOrderModal(this.selectedStock.symbol, "SELL");
+      };
+    }
+    const ocBtn = document.getElementById("chartModalOcBtn");
+    if (ocBtn) {
+      ocBtn.onclick = () => {
+        this.closeChartModal();
+        if (this.selectedStock) this.openOptionChainModal(this.selectedStock.symbol);
+      };
+    }
+  }
+
+  openChartModal(symbol) {
+    const stock = STOCKS_MAP.get(symbol);
+    if (!stock) return;
+    this.selectedStock = stock;
+    const modal = document.getElementById("chartModalBackdrop");
+    this.viewStockChart(symbol);
+    if (modal) modal.classList.add("open");
+    if (this.chart) {
+      setTimeout(() => {
+        this.chart.resize();
+        this.chart.render();
+      }, 60);
+    }
+  }
+
+  closeChartModal() {
+    const modal = document.getElementById("chartModalBackdrop");
+    if (modal) modal.classList.remove("open");
   }
 
   viewStockChart(symbol) {
@@ -1207,80 +1238,6 @@ class App {
 
     if (this.chart) {
       this.chart.setStock(stock);
-    }
-  }
-
-  // --- Views Rendering ---
-
-  // 1. Dashboard View
-  renderDashboard() {
-    this.updateDashboardKPIs();
-    if (this.selectedStock) {
-      this.viewStockChart(this.selectedStock.symbol);
-    }
-  }
-
-  updateDashboardKPIs() {
-    store.reconcileFunds();
-
-    const availEl = document.getElementById("dashAvailableCash");
-    const usedEl = document.getElementById("dashUsedMargin");
-    const holdingsValEl = document.getElementById("dashHoldingsVal");
-    const positionsMtmEl = document.getElementById("dashPositionsMTM");
-    const positionsMtmSub = document.getElementById("dashPositionsMTMSub");
-
-    if (availEl) {
-      availEl.textContent = `₹${store.funds.availableCash.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
-    }
-    if (usedEl) {
-      usedEl.textContent = `₹${store.funds.usedMargin.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
-      const sub = usedEl.closest(".kpi-card")?.querySelector(".kpi-sub");
-      if (sub) {
-        sub.textContent = store.funds.usedMargin > 0 ? "Allocated in stocks & options" : "No margin currently blocked";
-      }
-    }
-
-    let totalHoldingsCur = 0;
-    let totalHoldingsCost = 0;
-    store.holdings.forEach((h) => {
-      const s = STOCKS_MAP.get(h.symbol);
-      const ltp = s ? s.price : h.avgPrice;
-      totalHoldingsCur += h.quantity * ltp;
-      totalHoldingsCost += (h.quantity * h.avgPrice);
-    });
-    const holdingsUnrealizedPL = totalHoldingsCur - totalHoldingsCost;
-
-    if (holdingsValEl) {
-      holdingsValEl.textContent = `₹${totalHoldingsCur.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
-      const sub = holdingsValEl.closest(".kpi-card")?.querySelector(".kpi-sub");
-      if (sub) {
-        if (store.holdings.length > 0) {
-          sub.textContent = `${store.holdings.length} stock(s) held (${holdingsUnrealizedPL >= 0 ? '+' : ''}₹${holdingsUnrealizedPL.toFixed(2)})`;
-        } else {
-          sub.textContent = store.funds.realizedPnL !== 0 ? "Holdings sold | Cash realized" : "Current portfolio valuation";
-        }
-      }
-    }
-
-    let totalOpenMTM = 0;
-    store.positions.forEach((p) => {
-      if (p.status === "OPEN") {
-        const s = STOCKS_MAP.get(p.symbol);
-        const ltp = s ? s.price : p.avgPrice;
-        const diff = p.quantity > 0 ? (ltp - p.avgPrice) : (p.avgPrice - ltp);
-        totalOpenMTM += diff * Math.abs(p.quantity);
-      }
-    });
-
-    const realizedPL = store.getRealizedPnL();
-    const totalNetPL = realizedPL + totalOpenMTM + holdingsUnrealizedPL;
-
-    if (positionsMtmEl) {
-      positionsMtmEl.className = `kpi-val ${totalNetPL >= 0 ? 'text-green' : 'text-red'}`;
-      positionsMtmEl.textContent = `${totalNetPL >= 0 ? '+' : ''}₹${totalNetPL.toFixed(2)}`;
-      if (positionsMtmSub) {
-        positionsMtmSub.textContent = `Realized: ${realizedPL >= 0 ? '+' : ''}₹${realizedPL.toFixed(2)} | Live MTM: ${totalOpenMTM >= 0 ? '+' : ''}₹${totalOpenMTM.toFixed(2)}`;
-      }
     }
   }
 
@@ -1846,8 +1803,6 @@ class App {
       } else {
         this.switchView("positions");
       }
-    } else if (tab === "dashboard") {
-      this.switchView("dashboard");
     } else if (tab === "funds") {
       this.switchView("funds");
     }
@@ -1919,8 +1874,7 @@ class App {
     if (btnChart) {
       btnChart.onclick = () => {
         this.closeStockSheet();
-        this.switchMobileTab("dashboard");
-        this.viewStockChart(stock.symbol);
+        this.openChartModal(stock.symbol);
       };
     }
     if (btnOc) {

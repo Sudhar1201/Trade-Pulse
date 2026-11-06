@@ -38,9 +38,8 @@
     <div class="header-right">
       <nav>
         <ul class="nav-tabs">
-          <li><a href="#dashboard" class="nav-link active" data-view="dashboard">Dashboard</a></li>
           <li>
-            <a href="#orders" class="nav-link" data-view="orders">
+            <a href="#orders" class="nav-link active" data-view="orders">
               Orders <span class="badge-count" id="badgeOpenOrders" style="display:none;">0</span>
             </a>
           </li>
@@ -149,84 +148,8 @@
     <!-- RIGHT PANE: Main Workspace Views -->
     <section class="workspace-pane">
 
-      <!-- ==================== 1. DASHBOARD VIEW ==================== -->
-      <div class="view-section active" id="view-dashboard">
-        <div class="page-title-row">
-          <div>
-            <h1 class="page-title">Market Dashboard</h1>
-            <p class="page-subtitle">Welcome to your demo learning workspace. Live Indian NSE equity &amp; options paper trading.</p>
-          </div>
-          <div style="display:flex;gap:10px;">
-            <button class="btn-nav-oc" onclick="app.openOptionChainModal('NIFTY 50')">
-              ⚡ Option Chain (CE / PE)
-            </button>
-            <button class="btn-primary" onclick="app.openOrderModal('LT', 'BUY')">
-              + Quick Buy L&amp;T
-            </button>
-          </div>
-        </div>
-
-        <!-- Colorful KPI Grid -->
-        <div class="kpi-grid">
-          <div class="kpi-card kpi-card-cyan">
-            <div class="kpi-label">Available Demo Margin</div>
-            <div class="kpi-val text-green" id="dashAvailableCash">₹20,000.00</div>
-            <div class="kpi-sub">Virtual cash for practice</div>
-          </div>
-          <div class="kpi-card kpi-card-amber">
-            <div class="kpi-label">Used Margin</div>
-            <div class="kpi-val text-amber" id="dashUsedMargin">₹0.00</div>
-            <div class="kpi-sub">Allocated in stocks &amp; options</div>
-          </div>
-          <div class="kpi-card kpi-card-purple">
-            <div class="kpi-label">Holdings Value (CNC)</div>
-            <div class="kpi-val text-purple" id="dashHoldingsVal">₹0.00</div>
-            <div class="kpi-sub">Current portfolio valuation</div>
-          </div>
-          <div class="kpi-card kpi-card-emerald">
-            <div class="kpi-label">Total Profit &amp; Loss (P&amp;L)</div>
-            <div class="kpi-val text-green" id="dashPositionsMTM">₹0.00</div>
-            <div class="kpi-sub" id="dashPositionsMTMSub">Realized: ₹0.00 | Live MTM: ₹0.00</div>
-          </div>
-        </div>
-
-        <!-- Interactive Canvas Chart Card -->
-        <div class="chart-container-card">
-          <div class="chart-header-row">
-            <div class="chart-stock-meta">
-              <span class="chart-stock-symbol" id="chartStockSymbol">LT (Larsen &amp; Toubro Ltd.)</span>
-              <span class="chart-stock-ltp" id="chartStockLTP">₹4,018.50</span>
-              <span class="font-semibold text-green" id="chartStockChange">+74.10 (+1.88%)</span>
-            </div>
-
-            <div class="chart-controls">
-              <button class="btn-secondary" id="toggleChartTypeBtn" style="padding:5px 12px;font-size:12px;">
-                📊 Candlestick
-              </button>
-              <button class="chart-tf-btn active" data-tf="1D">1D</button>
-              <button class="chart-tf-btn" data-tf="5D">5D</button>
-              <button class="chart-tf-btn" data-tf="1M">1M</button>
-              <button class="chart-tf-btn" data-tf="1Y">1Y</button>
-            </div>
-          </div>
-
-          <div style="position: relative; width: 100%; height: 350px;">
-            <canvas id="mainStockChartCanvas"></canvas>
-          </div>
-        </div>
-
-        <!-- Educational Demo Highlights -->
-        <div class="demo-info-banner">
-          <div class="demo-info-text">
-            <h3>🎓 Zero-Risk Demo Trading: Stocks &amp; Options (Call / Put)</h3>
-            <p>Every newly registered account automatically receives <b>₹20,000.00</b> demo capital. Trade authentic Indian stocks (L&amp;T, KVB, Reliance, TCS) and trade <b>Call (CE) &amp; Put (PE) options</b> on NIFTY, SENSEX, and all stocks with realistic tick execution.</p>
-          </div>
-          <button class="btn-primary" onclick="app.openOptionChainModal('NIFTY 50')">Explore Option Chain</button>
-        </div>
-      </div>
-
-      <!-- ==================== 2. ORDERS VIEW ==================== -->
-      <div class="view-section" id="view-orders">
+      <!-- ==================== 1. ORDERS VIEW ==================== -->
+      <div class="view-section active" id="view-orders">
         <div class="page-title-row">
           <div>
             <h1 class="page-title">Order Book</h1>
@@ -905,6 +828,40 @@
     </div>
   </div>
 
+  <!-- ==================== INTERACTIVE STOCK CHART MODAL ==================== -->
+  <div class="modal-backdrop" id="chartModalBackdrop" onclick="if(event.target===this)app.closeChartModal()">
+    <div class="chart-modal-card">
+      <div class="chart-modal-header">
+        <div class="chart-stock-meta">
+          <span class="chart-stock-symbol" id="chartStockSymbol">LT (Larsen &amp; Toubro Ltd.)</span>
+          <span class="chart-stock-ltp" id="chartStockLTP">₹4,018.50</span>
+          <span class="font-semibold text-green" id="chartStockChange">+74.10 (+1.88%)</span>
+        </div>
+
+        <div class="chart-controls">
+          <button class="btn-secondary" id="toggleChartTypeBtn" style="padding:5px 12px;font-size:12px;">
+            📊 Candlestick
+          </button>
+          <button class="chart-tf-btn active" data-tf="1D">1D</button>
+          <button class="chart-tf-btn" data-tf="5D">5D</button>
+          <button class="chart-tf-btn" data-tf="1M">1M</button>
+          <button class="chart-tf-btn" data-tf="1Y">1Y</button>
+          <button class="btn-secondary" id="closeChartModalBtn" style="padding:4px 10px;margin-left:6px;" onclick="app.closeChartModal()">✕</button>
+        </div>
+      </div>
+
+      <div style="position: relative; width: 100%; height: 360px;">
+        <canvas id="mainStockChartCanvas"></canvas>
+      </div>
+
+      <div class="chart-modal-footer">
+        <button class="btn-primary" id="chartModalBuyBtn" style="flex:1;background:var(--tp-blue);">BUY</button>
+        <button class="btn-danger" id="chartModalSellBtn" style="flex:1;background:var(--tp-orange);">SELL</button>
+        <button class="btn-secondary" id="chartModalOcBtn" style="flex:1;">⚡ Option Chain</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== ZERODHA KITE MOBILE BOTTOM NAVIGATION ==================== -->
   <nav class="mobile-bottom-nav" id="mobileBottomNav">
     <button class="mob-nav-item active" data-mob-tab="watchlist" onclick="app.switchMobileTab('watchlist')">
@@ -939,15 +896,6 @@
         <span class="mob-badge" id="mobBadgePortfolio" style="display:none;">0</span>
       </div>
       <span class="mob-nav-label">Portfolio</span>
-    </button>
-
-    <button class="mob-nav-item" data-mob-tab="dashboard" onclick="app.switchMobileTab('dashboard')">
-      <div class="mob-nav-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-        </svg>
-      </div>
-      <span class="mob-nav-label">Dashboard</span>
     </button>
 
     <button class="mob-nav-item" data-mob-tab="funds" onclick="app.switchMobileTab('funds')">
