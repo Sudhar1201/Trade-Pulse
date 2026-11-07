@@ -2026,32 +2026,585 @@ body {
   display: none;
 }
 
-body[data-mobile-tab] .mobile-portfolio-cards {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 10px !important;
-  padding: 2px 0 24px 0 !important;
-  width: 100% !important;
-}
+/* ==========================================================================
+   AUTHENTIC ZERODHA KITE PORTFOLIO DESIGN SYSTEM (Holdings & Positions)
+   ========================================================================== */
 
-body[data-mobile-tab] #view-orders .data-table,
-body[data-mobile-tab] #view-holdings .data-table,
-body[data-mobile-tab] #view-positions .data-table,
-body[data-mobile-tab] #view-orders .empty-state,
-body[data-mobile-tab] #view-holdings .empty-state,
-body[data-mobile-tab] #view-positions .empty-state {
-  display: none !important;
-}
-
-.kite-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 13px 15px;
+.kite-portfolio-container {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0;
   display: flex;
   flex-direction: column;
+  background: #f0f3f7;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* 1. Top Header */
+.kite-port-header {
+  padding: 14px 18px 0 18px;
+  background: #f0f3f7;
+}
+
+.kite-port-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.kite-port-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-dark, #1e293b);
+  letter-spacing: -0.3px;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.kite-port-chevron-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #64748b);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.15s ease;
+}
+
+.kite-port-chevron-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--tp-blue, #387ed1);
+}
+
+/* 2. Subtabs Bar (Holdings / Positions) */
+.kite-subtabs-bar {
+  display: flex;
+  gap: 28px;
+  border-bottom: 1.5px solid var(--border-color, #e2e8f0);
+}
+
+.kite-subtab-btn {
+  background: none;
+  border: none;
+  padding: 8px 4px 12px 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-secondary, #64748b);
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.15s ease;
+}
+
+.kite-subtab-btn.active {
+  color: #387ed1 !important;
+  font-weight: 700;
+}
+
+.kite-subtab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1.5px;
+  left: 0;
+  right: 0;
+  height: 2.5px;
+  background: #387ed1;
+  border-radius: 2px 2px 0 0;
+}
+
+.kite-tab-pill-badge {
+  background: #8da4f7;
+  color: #ffffff;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
+  display: inline-block;
+  line-height: 1.3;
+}
+
+/* 3. Elevated Total P&L Card */
+.kite-total-pnl-card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 18px 20px;
+  text-align: center;
+  margin: 14px 16px 16px 16px;
+  transition: transform 0.15s ease;
+}
+
+.kite-pnl-card-title {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #8892a0;
+  margin-bottom: 5px;
+  letter-spacing: 0.2px;
+}
+
+.kite-pnl-card-val {
+  font-size: 26px;
+  font-weight: 700;
+  font-family: var(--font-number, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  letter-spacing: -0.4px;
+}
+
+.kite-pnl-card-sub {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
-  box-shadow: var(--shadow-sm);
+  font-size: 11.5px;
+  color: #8892a0;
+  margin-top: 6px;
+}
+
+/* 4. Filter Toolbar */
+.kite-filter-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 18px;
+  background: #ffffff;
+  border-top: 1px solid #edf0f5;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.kite-ft-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.kite-ft-icon-btn {
+  background: none;
+  border: none;
+  color: #387ed1;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.kite-ft-icon-btn:hover {
+  background: rgba(56, 126, 209, 0.08);
+}
+
+.kite-ft-text-btn {
+  background: none;
+  border: none;
+  color: #387ed1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.kite-ft-text-btn:hover {
+  background: rgba(56, 126, 209, 0.08);
+}
+
+.kite-ft-right {
+  display: flex;
+  align-items: center;
+}
+
+.kite-ft-sort-btn {
+  background: none;
+  border: none;
+  color: #387ed1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.kite-ft-sort-btn:hover {
+  background: rgba(56, 126, 209, 0.08);
+}
+
+.kite-blue-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #387ed1;
+  display: inline-block;
+}
+
+.kite-search-expand {
+  padding: 8px 18px 12px 18px;
+  border-bottom: 1px solid var(--border-color, #f1f5f9);
+}
+
+.kite-search-expand input {
+  width: 100%;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #cbd5e1);
+  font-size: 13px;
+  background: var(--bg-primary, #ffffff);
+  color: var(--text-dark, #1e293b);
+  outline: none;
+}
+
+.kite-search-expand input:focus {
+  border-color: #387ed1;
+  box-shadow: 0 0 0 2px rgba(56, 126, 209, 0.15);
+}
+
+/* 5. Items List */
+.kite-items-list {
+  display: flex;
+  flex-direction: column;
+  padding: 0 18px 24px 18px;
+  background: var(--bg-primary, #ffffff);
+}
+
+.kite-pos-item {
+  padding: 14px 2px;
+  border-bottom: 1px solid var(--border-color, #edf2f7);
+  cursor: pointer;
+  transition: background 0.12s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.kite-pos-item:hover {
+  background: rgba(56, 126, 209, 0.02);
+}
+
+.kite-pos-item:active {
+  background: rgba(56, 126, 209, 0.05);
+}
+
+.kite-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.kite-row-top {
+  margin-bottom: 5px;
+}
+
+.kite-qty-avg {
+  font-size: 12px;
+  color: #8f9ca9;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kite-qty-avg b.val-dark {
+  color: var(--text-dark, #334155);
+  font-weight: 600;
+}
+
+.kite-qty-avg b.val-muted {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.kite-prod-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.badge-nrml {
+  background: #f1effb;
+  color: #7058d8;
+}
+
+.badge-cnc {
+  background: #eef4ff;
+  color: #2563eb;
+}
+
+.badge-mis {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.badge-ce {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.badge-pe {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.kite-row-mid {
+  margin-bottom: 4px;
+}
+
+.kite-symbol-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-dark, #1e293b);
+  letter-spacing: -0.2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.kite-w-tag {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #e0f2fe;
+  color: #0284c7;
+  font-size: 9.5px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kite-pnl-val {
+  font-size: 15.5px;
+  font-weight: 700;
+  font-family: var(--font-number, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  white-space: nowrap;
+}
+
+.kite-row-bottom {
+  font-size: 12px;
+}
+
+.kite-exchange {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8f9ca9;
+  text-transform: uppercase;
+}
+
+.kite-ltp {
+  font-size: 12px;
+  color: #8f9ca9;
+}
+
+.kite-ltp b {
+  color: var(--text-dark, #334155);
+  font-weight: 600;
+  margin-left: 3px;
+  font-family: var(--font-number, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+}
+
+/* Floating Action Button (FAB) - Visible on mobile */
+.kite-fab-chart {
+  display: none;
+  position: fixed;
+  bottom: 76px;
+  right: 18px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--card-bg, #ffffff);
+  color: #1e293b;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--border-color, #e2e8f0);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 85;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+@media (max-width: 768px) {
+  .kite-fab-chart {
+    display: flex;
+  }
+}
+
+.kite-fab-chart:hover {
+  transform: scale(1.06);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+
+.kite-fab-chart:active {
+  transform: scale(0.95);
+}
+
+/* Kite Action Sheet */
+.kite-action-sheet {
+  width: 100%;
+  max-width: 580px;
+  background: var(--bg-primary, #ffffff);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.3);
+  padding: 12px 20px 24px 20px;
+  animation: slideUpSheet 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  border-top: 1.5px solid var(--border-color, #e2e8f0);
+}
+
+.kite-sheet-drag-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 3px;
+  background: #cbd5e1;
+  margin: 0 auto 14px auto;
+}
+
+.kite-sheet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-color, #f1f5f9);
+  margin-bottom: 16px;
+}
+
+.kite-sheet-symbol {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-dark, #0f172a);
+  margin-bottom: 3px;
+}
+
+.kite-sheet-sub {
+  font-size: 12px;
+  color: var(--text-secondary, #64748b);
+  font-weight: 500;
+}
+
+.kite-sheet-header-right {
+  text-align: right;
+}
+
+.kite-sheet-ltp {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-dark, #0f172a);
+}
+
+.kite-sheet-pnl {
+  font-size: 13.5px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.kite-sheet-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.kite-sheet-btn {
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.sheet-btn-exit {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.sheet-btn-exit:hover {
+  background: #dc2626;
+}
+
+.sheet-btn-add {
+  background: #387ed1;
+  color: #ffffff;
+}
+
+.sheet-btn-add:hover {
+  background: #2563eb;
+}
+
+.sheet-btn-chart {
+  background: var(--card-bg, #f1f5f9);
+  color: var(--text-dark, #334155);
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.sheet-btn-depth {
+  background: var(--card-bg, #f1f5f9);
+  color: var(--text-dark, #334155);
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.kite-sheet-dismiss {
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary, #64748b);
+  cursor: pointer;
+}
+
+/* Dark Mode Overrides for Kite Portfolio */
+body.dark-mode .kite-portfolio-container,
+body.dark-mode .kite-port-header {
+  background: #0f172a !important;
+}
+
+body.dark-mode .kite-total-pnl-card {
+  background: #151e2e !important;
+  border-color: #243247 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+}
+
+body.dark-mode .kite-filter-toolbar,
+body.dark-mode .kite-items-list {
+  background: #0b0f17 !important;
+}
+
+body.dark-mode .kite-pos-item {
+  border-bottom-color: #1e293b !important;
+}
+
+body.dark-mode .kite-fab-chart {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f1f5f9 !important;
+}
+
+body.dark-mode .sheet-btn-chart,
+body.dark-mode .sheet-btn-depth {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-color: #334155 !important;
 }
 
 .modal-close-icon {

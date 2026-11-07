@@ -400,16 +400,45 @@ class App {
       mobPortBadge.style.display = portCount ? "inline-block" : "none";
     }
 
-    // Mobile Portfolio Subtabs Counts
+    // Mobile Portfolio Subtabs Counts & Badges
+    const totalHoldingsCount = store.holdings.length;
     const mobHCount = document.getElementById("mobHoldingsTabCount");
     const mobHCount2 = document.getElementById("mobHoldingsTabCount2");
-    if (mobHCount) mobHCount.textContent = store.holdings.length;
-    if (mobHCount2) mobHCount2.textContent = store.holdings.length;
+    if (mobHCount) mobHCount.textContent = totalHoldingsCount;
+    if (mobHCount2) mobHCount2.textContent = totalHoldingsCount;
 
     const mobPCount = document.getElementById("mobPositionsTabCount");
     const mobPCount2 = document.getElementById("mobPositionsTabCount2");
     if (mobPCount) mobPCount.textContent = totalPositionsCount;
     if (mobPCount2) mobPCount2.textContent = totalPositionsCount;
+
+    // Authentic Zerodha Kite Header Subtab Badges
+    const pBadge1 = document.getElementById("portPositionsTabBadge");
+    const pBadge2 = document.getElementById("portPositionsTabBadge2");
+    if (pBadge1) {
+      pBadge1.textContent = totalPositionsCount;
+      pBadge1.style.display = totalPositionsCount ? "inline-block" : "none";
+    }
+    if (pBadge2) {
+      pBadge2.textContent = totalPositionsCount;
+      pBadge2.style.display = totalPositionsCount ? "inline-block" : "none";
+    }
+
+    const hBadge1 = document.getElementById("portHoldingsTabBadge");
+    const hBadge2 = document.getElementById("portHoldingsTabBadge2");
+    if (hBadge1) {
+      hBadge1.textContent = totalHoldingsCount;
+      hBadge1.style.display = totalHoldingsCount ? "inline-block" : "none";
+    }
+    if (hBadge2) {
+      hBadge2.textContent = totalHoldingsCount;
+      hBadge2.style.display = totalHoldingsCount ? "inline-block" : "none";
+    }
+
+    const mobNavUser = document.getElementById("mobBottomNavUserId");
+    if (mobNavUser) {
+      mobNavUser.textContent = (store.currentUser && store.currentUser.clientId) ? store.currentUser.clientId : "TP7842";
+    }
   }
 
   renderUserQuickFunds() {
@@ -1282,43 +1311,57 @@ class App {
     }
   }
 
+  // Helper to format Kite symbol with optional weekly 'W' badge (Zerodha Kite Reference)
+  formatKiteSymbol(symbol, isOption = false, underlying = null) {
+    if (!isOption && !symbol.includes(" CE") && !symbol.includes(" PE")) {
+      return `<span>${symbol}</span>`;
+    }
+    const isCE = symbol.includes(" CE");
+    const isPE = symbol.includes(" PE");
+    if (!isCE && !isPE) return `<span>${symbol}</span>`;
+
+    // Match patterns like "SENSEX 12th NOV 78300 PE"
+    const match = symbol.match(/^([A-Z0-9\s]+?)\s+(\d{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]{3})\s+(\d+)\s+(CE|PE)$/i);
+    if (match) {
+      const idx = match[1];
+      const expiry = match[2];
+      const strike = match[3];
+      const type = match[4];
+      return `<span>${idx} ${expiry} <span class="kite-w-tag">W</span> ${strike} ${type}</span>`;
+    }
+
+    const parts = symbol.split(/\s+/);
+    const type = parts[parts.length - 1];
+    const strike = parts[parts.length - 2];
+    const underlyingName = parts.slice(0, parts.length - 2).join(" ");
+    return `<span>${underlyingName} 12th <span class="kite-w-tag">W</span> NOV ${strike} ${type}</span>`;
+  }
+
   // 2. Holdings View
   renderHoldings() {
-    const tbody = document.getElementById("holdingsTableBody");
+    const listEl = document.getElementById("holdingsKiteList");
     const emptyState = document.getElementById("holdingsEmptyState");
-    const mobCards = document.getElementById("holdingsMobileCards");
-    const mobPnlEl = document.getElementById("mobHoldingsTotalPL");
-    const mobInvestedEl = document.getElementById("mobHoldingsInvested");
-    const mobCurrentEl = document.getElementById("mobHoldingsCurrent");
+    const pnlCardVal = document.getElementById("holdingsPnlCardVal");
+    const pnlCardSub = document.getElementById("holdingsPnlCardSub");
+    const cardInvested = document.getElementById("holdingsCardInvested");
+    const cardCurrent = document.getElementById("holdingsCardCurrent");
+
+    // Also update legacy desktop elements if present
+    const tbody = document.getElementById("holdingsTableBody");
     const totalInvestedEl = document.getElementById("holdingsTotalInvested");
     const curValEl = document.getElementById("holdingsCurrentVal");
     const totalPLEl = document.getElementById("holdingsTotalPL");
     const dayPLEl = document.getElementById("holdingsDayPL");
 
-    if (!tbody) return;
-
     if (store.holdings.length === 0) {
-      tbody.innerHTML = "";
+      if (listEl) listEl.innerHTML = "";
+      if (tbody) tbody.innerHTML = "";
       if (emptyState) emptyState.style.display = "block";
-      if (mobCards) {
-        mobCards.innerHTML = `
-          <div class="mob-empty-msg">
-            <div style="font-size:24px;margin-bottom:6px;">💼</div>
-            <div style="font-weight:700;color:var(--text-dark);margin-bottom:4px;">No holdings held for &gt; 1 day</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;line-height:1.4;">Stocks bought today appear in <b>Positions</b> (intraday) and automatically move to Holdings on the next trading day (T+1 Demat settlement).</div>
-            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-              <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="app.switchMobileTab('portfolio'); app.switchView('positions');">View Positions</button>
-              <button class="btn-secondary" style="font-size:12px;padding:6px 14px;" onclick="app.simulateNextDay()">🌅 Fast-Forward (T+1)</button>
-            </div>
-          </div>
-        `;
+      if (pnlCardVal) {
+        pnlCardVal.className = "kite-pnl-card-val";
+        pnlCardVal.textContent = "+0.00";
       }
-      if (mobPnlEl) {
-        mobPnlEl.className = "mob-pnl-val";
-        mobPnlEl.textContent = "₹0.00 (0.00%)";
-      }
-      if (mobInvestedEl) mobInvestedEl.textContent = "₹0.00";
-      if (mobCurrentEl) mobCurrentEl.textContent = "₹0.00";
+      if (pnlCardSub) pnlCardSub.style.display = "none";
       if (totalInvestedEl) totalInvestedEl.textContent = "₹0.00";
       if (curValEl) curValEl.textContent = "₹0.00";
       if (totalPLEl) {
@@ -1335,19 +1378,41 @@ class App {
     let totalCurrent = 0;
     let totalDayPL = 0;
     let totalRealizedGain = 0;
-    const cardsHtml = [];
 
-    tbody.innerHTML = store.holdings.map((h) => {
+    let itemsToRender = [...store.holdings];
+    if (this.portHoldingsFilter === "open") {
+      itemsToRender = itemsToRender.filter(h => h.quantity > 0 && h.status === "OPEN");
+    } else if (this.portHoldingsFilter === "closed") {
+      itemsToRender = itemsToRender.filter(h => h.quantity === 0 || h.status === "CLOSED");
+    }
+
+    if (this.portHoldingsSearchQuery) {
+      const q = this.portHoldingsSearchQuery.toLowerCase();
+      itemsToRender = itemsToRender.filter(h => (h.symbol && h.symbol.toLowerCase().includes(q)) || (h.name && h.name.toLowerCase().includes(q)));
+    }
+
+    if (this.portSortDirection) {
+      itemsToRender.sort((a, b) => {
+        const getPl = (item) => {
+          const s = STOCKS_MAP.get(item.symbol);
+          const isC = item.quantity === 0 || item.status === "CLOSED";
+          if (isC) return item.realizedPL || 0;
+          const l = s ? s.price : item.avgPrice;
+          return (item.quantity * l) - item.investedValue;
+        };
+        return this.portSortDirection === "desc" ? getPl(b) - getPl(a) : getPl(a) - getPl(b);
+      });
+    }
+
+    const kiteItemsHtml = itemsToRender.map(h => {
       const stock = STOCKS_MAP.get(h.symbol);
       const isClosed = h.quantity === 0 || h.status === "CLOSED";
       const ltp = stock ? stock.price : (h.exitPrice || h.avgPrice);
       const curVal = isClosed ? 0 : (h.quantity * ltp);
       const pl = isClosed ? (h.realizedPL || 0) : (curVal - h.investedValue);
-      const plPct = (!isClosed && h.investedValue > 0) ? (pl / h.investedValue) * 100 : 0;
       const isPositive = pl >= 0;
 
       const dayChange = (!isClosed && stock) ? stock.change * h.quantity : 0;
-      const dayPct = stock ? stock.pChange : 0;
 
       if (!isClosed) {
         totalInvested += h.investedValue;
@@ -1357,127 +1422,81 @@ class App {
         totalRealizedGain += (h.realizedPL || 0);
       }
 
-      cardsHtml.push(`
-        <div class="kite-card ${isClosed ? 'kite-card-closed' : ''}">
-          <div class="kite-card-row kite-row-top">
-            <div class="kite-card-qty-avg">
-              <span>Qty. <b class="${isClosed ? 'text-muted' : 'font-bold'}">${h.quantity}</b></span>
-              <span class="kite-sep">•</span>
-              <span>Avg. <b>${isClosed ? '0.00' : h.avgPrice.toFixed(2)}</b></span>
+      return `
+        <div class="kite-pos-item ${isClosed ? 'kite-item-closed' : ''}" onclick="app.openHoldingSheet('${h.symbol}')">
+          <div class="kite-item-row kite-row-top">
+            <div class="kite-qty-avg">
+              <span>Qty. <b class="${isClosed ? 'val-muted' : 'val-dark'}">${isClosed ? '0' : h.quantity}</b></span>
+              <span class="kite-sep"></span>
+              <span>Avg. <b class="${isClosed ? 'val-muted' : 'val-dark'}">${isClosed ? '0.00' : h.avgPrice.toFixed(2)}</b></span>
             </div>
-            <span class="badge-tag tag-cnc">CNC</span>
+            <span class="kite-prod-badge badge-cnc">CNC</span>
           </div>
-          <div class="kite-card-row kite-row-mid">
-            <div class="kite-card-symbol">${h.symbol}</div>
-            <div class="kite-card-pnl ${isPositive ? 'text-green' : 'text-red'}">
+          <div class="kite-item-row kite-row-mid">
+            <div class="kite-symbol-name">
+              <span>${h.symbol}</span>
+            </div>
+            <div class="kite-pnl-val ${isPositive ? 'text-green' : 'text-red'}">
               ${isPositive ? '+' : ''}${pl.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
-          <div class="kite-card-row kite-row-bottom">
-            <div class="kite-card-exchange">${h.exchange || 'NSE'}</div>
-            <div class="kite-card-ltp">LTP <b>₹${ltp.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></div>
-          </div>
-          <div class="kite-card-actions">
-            ${!isClosed ? `
-              <button class="mob-btn-exit" onclick="app.openOrderModal('${h.symbol}', 'SELL')">Exit / Sell</button>
-              <button class="mob-btn-add" onclick="app.openOrderModal('${h.symbol}', 'BUY')">+ Add More</button>
-            ` : `
-              <button class="mob-btn-add" style="width:100%;" onclick="app.openOrderModal('${h.symbol}', 'BUY')">+ Re-buy ${h.symbol}</button>
-            `}
+          <div class="kite-item-row kite-row-bottom">
+            <div class="kite-exchange">${h.exchange || 'NSE'}</div>
+            <div class="kite-ltp">LTP <b>${ltp.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></div>
           </div>
         </div>
-      `);
-
-      return `
-        <tr class="${isClosed ? 'row-closed' : ''}">
-          <td>
-            <div class="font-bold text-dark">
-              ${h.symbol}
-              ${isClosed ? '<span class="badge-tag tag-complete" style="margin-left:6px;font-size:10px;">CLOSED</span>' : ''}
-            </div>
-            <div style="font-size:11.5px;color:var(--text-secondary);">${h.name}</div>
-          </td>
-          <td class="text-right font-bold ${isClosed ? 'text-muted' : ''}">${h.quantity}</td>
-          <td class="text-right">${isClosed ? '—' : `₹${h.avgPrice.toFixed(2)}`}</td>
-          <td class="text-right font-bold">₹${ltp.toFixed(2)}</td>
-          <td class="text-right font-bold">₹${curVal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-          <td class="text-right font-bold ${isPositive ? 'text-green' : 'text-red'}">
-            ${isPositive ? '+' : ''}₹${pl.toFixed(2)} ${!isClosed ? `(${isPositive ? '+' : ''}${plPct.toFixed(2)}%)` : '(Realized)'}
-          </td>
-          <td class="text-right ${dayChange >= 0 ? 'text-green' : 'text-red'}">
-            ${isClosed ? '—' : `${dayChange >= 0 ? '+' : ''}₹${dayChange.toFixed(2)} (${dayPct.toFixed(2)}%)`}
-          </td>
-          <td class="text-right">
-            ${!isClosed ? `
-              <button class="btn-primary" style="padding:4px 8px;font-size:11.5px;" onclick="app.openOrderModal('${h.symbol}', 'BUY')">Add</button>
-              <button class="btn-danger" style="padding:4px 8px;font-size:11.5px;margin-left:4px;" onclick="app.openOrderModal('${h.symbol}', 'SELL')">Exit</button>
-            ` : `
-              <button class="btn-primary" style="padding:4px 8px;font-size:11.5px;" onclick="app.openOrderModal('${h.symbol}', 'BUY')">+ Re-buy</button>
-            `}
-          </td>
-        </tr>
       `;
     }).join("");
 
-    if (mobCards) mobCards.innerHTML = cardsHtml.join("");
+    if (listEl) listEl.innerHTML = kiteItemsHtml;
 
     const totalPL = (totalCurrent - totalInvested) + totalRealizedGain;
-    const totalPLPct = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
+    const isTotalPositive = totalPL >= 0;
+
+    if (pnlCardVal) {
+      pnlCardVal.className = `kite-pnl-card-val ${isTotalPositive ? 'text-green' : 'text-red'}`;
+      pnlCardVal.textContent = `${isTotalPositive ? '+' : ''}${totalPL.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    if (pnlCardSub && totalInvested > 0) {
+      pnlCardSub.style.display = "flex";
+      if (cardInvested) cardInvested.textContent = `₹${totalInvested.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+      if (cardCurrent) cardCurrent.textContent = `₹${totalCurrent.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+    } else if (pnlCardSub) {
+      pnlCardSub.style.display = "none";
+    }
 
     if (totalInvestedEl) totalInvestedEl.textContent = `₹${totalInvested.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
     if (curValEl) curValEl.textContent = `₹${totalCurrent.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
     if (totalPLEl) {
-      totalPLEl.className = `kpi-val ${totalPL >= 0 ? 'text-green' : 'text-red'}`;
-      totalPLEl.textContent = `${totalPL >= 0 ? '+' : ''}₹${totalPL.toFixed(2)} ${totalInvested > 0 ? `(${totalPLPct.toFixed(2)}%)` : '(Realized)'}`;
+      totalPLEl.className = `kpi-val ${isTotalPositive ? 'text-green' : 'text-red'}`;
+      totalPLEl.textContent = `${isTotalPositive ? '+' : ''}₹${totalPL.toFixed(2)}`;
     }
-    if (dayPLEl) {
-      dayPLEl.className = `kpi-val ${totalDayPL >= 0 ? 'text-green' : 'text-red'}`;
-      dayPLEl.textContent = `${totalDayPL >= 0 ? '+' : ''}₹${totalDayPL.toFixed(2)}`;
-    }
-    if (mobPnlEl) {
-      mobPnlEl.className = `mob-pnl-val ${totalPL >= 0 ? 'text-green' : 'text-red'}`;
-      mobPnlEl.textContent = `${totalPL >= 0 ? '+' : ''}₹${totalPL.toFixed(2)} ${totalInvested > 0 ? `(${totalPLPct.toFixed(2)}%)` : ''}`;
-    }
-    if (mobInvestedEl) mobInvestedEl.textContent = `₹${totalInvested.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
-    if (mobCurrentEl) mobCurrentEl.textContent = `₹${totalCurrent.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
   }
 
   updateHoldingsLiveData() {
     this.renderHoldings();
   }
 
-  // 3. Positions View (Intraday MIS & F&O Options)
+  // 3. Positions View (Intraday MIS & F&O Options - Exact Match to Zerodha Kite Screenshot)
   renderPositions() {
-    const tbody = document.getElementById("positionsTableBody");
+    const listEl = document.getElementById("positionsKiteList");
     const emptyState = document.getElementById("positionsEmptyState");
+    const pnlCardVal = document.getElementById("positionsPnlCardVal");
     const mtmKpi = document.getElementById("positionsTotalMTM");
-    const mobCards = document.getElementById("positionsMobileCards");
-    const mobPnlEl = document.getElementById("mobPositionsTotalPL");
-
-    if (!tbody) return;
 
     const todayPositions = store.positions;
 
     if (todayPositions.length === 0) {
-      tbody.innerHTML = "";
+      if (listEl) listEl.innerHTML = "";
       if (emptyState) emptyState.style.display = "block";
-      if (mobCards) {
-        mobCards.innerHTML = `
-          <div class="mob-empty-msg">
-            <div style="font-size:24px;margin-bottom:6px;">⚡</div>
-            <div style="font-weight:700;color:var(--text-dark);margin-bottom:4px;">No open positions</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Trade Call & Put options or MIS intraday stocks to see live MTM P&L.</div>
-            <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="app.openOptionChainModal('NIFTY 50')">Open Option Chain</button>
-          </div>
-        `;
+      if (pnlCardVal) {
+        pnlCardVal.className = "kite-pnl-card-val";
+        pnlCardVal.textContent = "+0.00";
       }
       if (mtmKpi) {
         mtmKpi.className = "kpi-val";
         mtmKpi.textContent = "₹0.00";
-      }
-      if (mobPnlEl) {
-        mobPnlEl.className = "mob-pnl-val";
-        mobPnlEl.textContent = "₹0.00";
       }
       return;
     }
@@ -1486,9 +1505,34 @@ class App {
 
     let totalMTM = 0;
     let totalRealized = 0;
-    const cardsHtml = [];
 
-    tbody.innerHTML = todayPositions.map((pos) => {
+    let itemsToRender = [...todayPositions];
+    if (this.portPositionsFilter === "open") {
+      itemsToRender = itemsToRender.filter(p => p.quantity !== 0 && p.status === "OPEN");
+    } else if (this.portPositionsFilter === "closed") {
+      itemsToRender = itemsToRender.filter(p => p.quantity === 0 || p.status === "CLOSED");
+    }
+
+    if (this.portPositionsSearchQuery) {
+      const q = this.portPositionsSearchQuery.toLowerCase();
+      itemsToRender = itemsToRender.filter(p => (p.symbol && p.symbol.toLowerCase().includes(q)) || (p.name && p.name.toLowerCase().includes(q)));
+    }
+
+    if (this.portSortDirection) {
+      itemsToRender.sort((a, b) => {
+        const getPl = (item) => {
+          const s = STOCKS_MAP.get(item.symbol);
+          const isC = item.status === "CLOSED" || item.quantity === 0;
+          if (isC) return item.realizedPL || 0;
+          const l = s ? s.price : (item.exitPrice || item.avgPrice);
+          const isL = item.quantity > 0;
+          return (isL ? (l - item.avgPrice) : (item.avgPrice - l)) * Math.abs(item.quantity);
+        };
+        return this.portSortDirection === "desc" ? getPl(b) - getPl(a) : getPl(a) - getPl(b);
+      });
+    }
+
+    const itemsHtml = itemsToRender.map((pos) => {
       const stock = STOCKS_MAP.get(pos.symbol);
       const isClosed = pos.status === "CLOSED" || pos.quantity === 0;
       const ltp = stock ? stock.price : (pos.exitPrice || pos.avgPrice);
@@ -1512,88 +1556,214 @@ class App {
         exchange = stock.exchange;
       }
 
-      const productTag = pos.isOption ? (pos.optionType === "CE" ? "badge-ce" : "badge-pe") : (pos.product === "CNC" ? "tag-cnc" : "tag-mis");
+      const productTag = pos.isOption ? (pos.optionType === "CE" ? "badge-ce" : "badge-pe") : (pos.product === "CNC" ? "badge-cnc" : "badge-mis");
+      const productLabel = pos.isOption ? "NRML" : (pos.product || "NRML");
 
-      cardsHtml.push(`
-        <div class="kite-card ${isClosed ? 'kite-card-closed' : ''}">
-          <div class="kite-card-row kite-row-top">
-            <div class="kite-card-qty-avg">
-              <span>Qty. <b class="${isClosed ? 'text-muted' : (isLong ? 'text-blue' : 'text-red')}">${isClosed ? '0' : pos.quantity}</b></span>
-              <span class="kite-sep">•</span>
-              <span>Avg. <b>${isClosed ? '0.00' : pos.avgPrice.toFixed(2)}</b></span>
+      return `
+        <div class="kite-pos-item ${isClosed ? 'kite-item-closed' : ''}" onclick="app.openPositionSheet('${pos.id}')">
+          <div class="kite-item-row kite-row-top">
+            <div class="kite-qty-avg">
+              <span>Qty. <b class="${isClosed ? 'val-muted' : 'val-dark'}">${isClosed ? '0' : Math.abs(pos.quantity)}</b></span>
+              <span class="kite-sep"></span>
+              <span>Avg. <b class="${isClosed ? 'val-muted' : 'val-dark'}">${isClosed ? '0.00' : pos.avgPrice.toFixed(2)}</b></span>
             </div>
-            <span class="badge-tag ${productTag}">${pos.product || 'NRML'}</span>
+            <span class="kite-prod-badge ${productTag}">${productLabel}</span>
           </div>
-          <div class="kite-card-row kite-row-mid">
-            <div class="kite-card-symbol">${pos.symbol}</div>
-            <div class="kite-card-pnl ${isProfitable ? 'text-green' : 'text-red'}">
+          <div class="kite-item-row kite-row-mid">
+            <div class="kite-symbol-name">
+              ${this.formatKiteSymbol(pos.symbol, pos.isOption, pos.underlying)}
+            </div>
+            <div class="kite-pnl-val ${isProfitable ? 'text-green' : 'text-red'}">
               ${isProfitable ? '+' : ''}${pnl.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
-          <div class="kite-card-row kite-row-bottom">
-            <div class="kite-card-exchange">${exchange}</div>
-            <div class="kite-card-ltp">LTP <b>₹${ltp.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></div>
-          </div>
-          <div class="kite-card-actions">
-            ${!isClosed ? `
-              <button class="mob-btn-exit" onclick="app.exitPosition('${pos.id}')">Exit / Sell</button>
-              <button class="mob-btn-add" onclick="app.openOrderModal('${pos.symbol}', 'BUY')">+ Add More</button>
-            ` : `
-              <button class="mob-btn-add" style="width:100%;" onclick="app.openOrderModal('${pos.symbol}', 'BUY')">+ Trade ${pos.symbol} Again</button>
-            `}
+          <div class="kite-item-row kite-row-bottom">
+            <div class="kite-exchange">${exchange}</div>
+            <div class="kite-ltp">LTP <b>${ltp.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></div>
           </div>
         </div>
-      `);
-
-      return `
-        <tr class="${isClosed ? 'row-closed' : ''}">
-          <td>
-            <span class="badge-tag ${pos.isOption ? (pos.optionType === 'CE' ? 'badge-ce' : 'badge-pe') : (pos.product === 'CNC' ? 'tag-cnc' : 'tag-mis')}">
-              ${pos.isOption ? `${pos.optionType} (${pos.product})` : (pos.product === 'CNC' ? 'CNC' : 'MIS 5x')}
-            </span>
-          </td>
-          <td>
-            <div class="font-bold text-dark">
-              ${pos.symbol}
-              ${isClosed ? '<span class="badge-tag tag-complete" style="margin-left:6px;font-size:10px;">CLOSED</span>' : ''}
-            </div>
-            <div style="font-size:11.5px;color:var(--text-secondary);">${pos.name}</div>
-          </td>
-          <td class="text-right font-bold ${isClosed ? 'text-muted' : (isLong ? 'text-blue' : 'text-red')}">
-            ${isClosed ? '0' : pos.quantity}
-          </td>
-          <td class="text-right">${isClosed ? '—' : `₹${pos.avgPrice.toFixed(2)}`}</td>
-          <td class="text-right font-bold">₹${ltp.toFixed(2)}</td>
-          <td class="text-right font-bold ${isProfitable ? 'text-green' : 'text-red'}">
-            ${isProfitable ? '+' : ''}₹${pnl.toFixed(2)} ${isClosed ? '(Realized)' : ''}
-          </td>
-          <td class="text-right">
-            ${!isClosed ? `
-              <button class="btn-danger" style="padding:4px 10px;font-size:11.5px;" onclick="app.exitPosition('${pos.id}')">Exit</button>
-            ` : `
-              <button class="btn-primary" style="padding:4px 8px;font-size:11.5px;" onclick="app.openOrderModal('${pos.symbol}', 'BUY')">Trade Again</button>
-            `}
-          </td>
-        </tr>
       `;
     }).join("");
 
-    if (mobCards) mobCards.innerHTML = cardsHtml.join("");
+    if (listEl) listEl.innerHTML = itemsHtml;
 
     const totalNetPositionsPL = totalMTM + totalRealized;
+    const isTotalProfitable = totalNetPositionsPL >= 0;
+
+    if (pnlCardVal) {
+      pnlCardVal.className = `kite-pnl-card-val ${isTotalProfitable ? 'text-green' : 'text-red'}`;
+      pnlCardVal.textContent = `${isTotalProfitable ? '+' : ''}${totalNetPositionsPL.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
 
     if (mtmKpi) {
-      mtmKpi.className = `kpi-val ${totalNetPositionsPL >= 0 ? 'text-green' : 'text-red'}`;
-      mtmKpi.textContent = `${totalNetPositionsPL >= 0 ? '+' : ''}₹${totalNetPositionsPL.toFixed(2)}`;
-    }
-    if (mobPnlEl) {
-      mobPnlEl.className = `mob-pnl-val ${totalNetPositionsPL >= 0 ? 'text-green' : 'text-red'}`;
-      mobPnlEl.textContent = `${totalNetPositionsPL >= 0 ? '+' : ''}₹${totalNetPositionsPL.toFixed(2)}`;
+      mtmKpi.className = `kpi-val ${isTotalProfitable ? 'text-green' : 'text-red'}`;
+      mtmKpi.textContent = `${isTotalProfitable ? '+' : ''}₹${totalNetPositionsPL.toFixed(2)}`;
     }
   }
 
   updatePositionsLiveData() {
     this.renderPositions();
+  }
+
+  // --- Zerodha Kite Action Sheet & Toolbar Handlers ---
+  openPositionSheet(posId) {
+    const pos = store.positions.find(p => p.id === posId);
+    if (!pos) return;
+    this.activeSheetItem = { type: "position", data: pos };
+
+    const stock = STOCKS_MAP.get(pos.symbol);
+    const ltp = stock ? stock.price : (pos.exitPrice || pos.avgPrice);
+    const isClosed = pos.status === "CLOSED" || pos.quantity === 0;
+    const isLong = pos.quantity > 0;
+    const pnl = isClosed ? (pos.realizedPL || 0) : ((isLong ? (ltp - pos.avgPrice) : (pos.avgPrice - ltp)) * Math.abs(pos.quantity));
+
+    const symEl = document.getElementById("kiteSheetSymbol");
+    const subEl = document.getElementById("kiteSheetSub");
+    const ltpEl = document.getElementById("kiteSheetLtp");
+    const pnlEl = document.getElementById("kiteSheetPnl");
+    const exitBtn = document.getElementById("kiteSheetBtnExit");
+
+    if (symEl) symEl.textContent = pos.symbol;
+    if (subEl) {
+      const ex = pos.isOption ? (pos.underlying === "SENSEX" ? "BFO" : "NFO") : (stock?.exchange || "NSE");
+      subEl.textContent = `${ex} • ${pos.product || "NRML"} • Net Qty: ${isClosed ? 0 : pos.quantity}`;
+    }
+    if (ltpEl) ltpEl.textContent = `₹${ltp.toFixed(2)}`;
+    if (pnlEl) {
+      pnlEl.className = `kite-sheet-pnl ${pnl >= 0 ? 'text-green' : 'text-red'}`;
+      pnlEl.textContent = `${pnl >= 0 ? '+' : ''}₹${pnl.toFixed(2)} ${isClosed ? '(Realized)' : ''}`;
+    }
+    if (exitBtn) {
+      exitBtn.style.display = isClosed ? "none" : "flex";
+      exitBtn.textContent = "🔴 Exit Position";
+    }
+
+    const backdrop = document.getElementById("kiteItemSheetBackdrop");
+    if (backdrop) backdrop.style.display = "flex";
+  }
+
+  openHoldingSheet(symbol) {
+    const h = store.holdings.find(item => item.symbol === symbol);
+    if (!h) return;
+    this.activeSheetItem = { type: "holding", data: h };
+
+    const stock = STOCKS_MAP.get(symbol);
+    const ltp = stock ? stock.price : (h.exitPrice || h.avgPrice);
+    const isClosed = h.quantity === 0 || h.status === "CLOSED";
+    const curVal = isClosed ? 0 : (h.quantity * ltp);
+    const pl = isClosed ? (h.realizedPL || 0) : (curVal - h.investedValue);
+
+    const symEl = document.getElementById("kiteSheetSymbol");
+    const subEl = document.getElementById("kiteSheetSub");
+    const ltpEl = document.getElementById("kiteSheetLtp");
+    const pnlEl = document.getElementById("kiteSheetPnl");
+    const exitBtn = document.getElementById("kiteSheetBtnExit");
+
+    if (symEl) symEl.textContent = h.symbol;
+    if (subEl) subEl.textContent = `${h.exchange || "NSE"} • CNC • Qty: ${isClosed ? 0 : h.quantity}`;
+    if (ltpEl) ltpEl.textContent = `₹${ltp.toFixed(2)}`;
+    if (pnlEl) {
+      pnlEl.className = `kite-sheet-pnl ${pl >= 0 ? 'text-green' : 'text-red'}`;
+      pnlEl.textContent = `${pl >= 0 ? '+' : ''}₹${pl.toFixed(2)} ${isClosed ? '(Realized)' : ''}`;
+    }
+    if (exitBtn) {
+      exitBtn.style.display = isClosed ? "none" : "flex";
+      exitBtn.textContent = "🔴 Exit / Sell Holding";
+    }
+
+    const backdrop = document.getElementById("kiteItemSheetBackdrop");
+    if (backdrop) backdrop.style.display = "flex";
+  }
+
+  closeItemSheet() {
+    const backdrop = document.getElementById("kiteItemSheetBackdrop");
+    if (backdrop) backdrop.style.display = "none";
+    this.activeSheetItem = null;
+  }
+
+  actionSheetExit() {
+    if (!this.activeSheetItem) return;
+    const { type, data } = this.activeSheetItem;
+    this.closeItemSheet();
+
+    if (type === "position") {
+      this.exitPosition(data.id);
+    } else if (type === "holding") {
+      this.openOrderModal(data.symbol, "SELL");
+    }
+  }
+
+  actionSheetAdd() {
+    if (!this.activeSheetItem) return;
+    const sym = this.activeSheetItem.data.symbol;
+    this.closeItemSheet();
+    this.openOrderModal(sym, "BUY");
+  }
+
+  actionSheetChart() {
+    if (!this.activeSheetItem) return;
+    const sym = this.activeSheetItem.data.symbol;
+    this.closeItemSheet();
+    this.selectStock(sym);
+    if (window.innerWidth <= 768) {
+      this.switchMobileTab("watchlist");
+    }
+  }
+
+  actionSheetDepth() {
+    if (!this.activeSheetItem) return;
+    const sym = this.activeSheetItem.data.symbol;
+    this.closeItemSheet();
+    this.openDepthModal(sym);
+  }
+
+  openFabChart() {
+    const sym = (this.selectedStock && this.selectedStock.symbol) ? this.selectedStock.symbol : "NIFTY 50";
+    this.selectStock(sym);
+    if (window.innerWidth <= 768) {
+      this.switchMobileTab("watchlist");
+    }
+  }
+
+  togglePortSearch(view) {
+    const expandEl = document.getElementById(`${view}SearchExpand`);
+    const inputEl = document.getElementById(`${view}SearchInput`);
+    if (expandEl) {
+      const isVisible = expandEl.style.display === "block";
+      expandEl.style.display = isVisible ? "none" : "block";
+      if (!isVisible && inputEl) inputEl.focus();
+    }
+  }
+
+  filterPortHoldings(val) {
+    this.portHoldingsSearchQuery = val;
+    this.renderHoldings();
+  }
+
+  filterPortPositions(val) {
+    this.portPositionsSearchQuery = val;
+    this.renderPositions();
+  }
+
+  togglePortFilter(view) {
+    const prop = view === "holdings" ? "portHoldingsFilter" : "portPositionsFilter";
+    const current = this[prop] || "all";
+    const next = current === "all" ? "open" : (current === "open" ? "closed" : "all");
+    this[prop] = next;
+    window.showToast(`Showing: ${next.toUpperCase()} items`, "info");
+    if (view === "holdings") this.renderHoldings();
+    else this.renderPositions();
+  }
+
+  togglePortGrouping(view) {
+    window.showToast("Grouping toggled", "info");
+  }
+
+  sortPortItems(view) {
+    this.portSortDirection = this.portSortDirection === "desc" ? "asc" : "desc";
+    window.showToast(`Sorted by P&L (${this.portSortDirection.toUpperCase()})`, "info");
+    if (view === "holdings") this.renderHoldings();
+    else this.renderPositions();
   }
 
   exitPosition(positionId) {

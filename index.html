@@ -205,88 +205,88 @@
 
       <!-- ==================== 3. HOLDINGS VIEW ==================== -->
       <div class="view-section" id="view-holdings">
-        <!-- Mobile Portfolio Subtabs (Zerodha Kite Mobile Style) -->
-        <div class="mobile-portfolio-tabs">
-          <button class="mobile-port-tab active" onclick="app.switchView('holdings')">
-            Holdings <span class="port-tab-badge" id="mobHoldingsTabCount">0</span>
-          </button>
-          <button class="mobile-port-tab" onclick="app.switchView('positions')">
-            Positions <span class="port-tab-badge" id="mobPositionsTabCount">0</span>
-          </button>
-        </div>
+        <div class="kite-portfolio-container">
+          <!-- Kite Portfolio Header -->
+          <div class="kite-port-header">
+            <div class="kite-port-title-row">
+              <h1 class="kite-port-title">Portfolio</h1>
+              <button class="kite-port-chevron-btn" onclick="app.simulateNextDay()" title="Advance Trading Day (T+1)">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+            </div>
 
-        <!-- Mobile Total P&L Strip with compact Invested / Current stats -->
-        <div class="mobile-pnl-summary-bar" id="mobHoldingsPnlBar">
-          <div class="mob-pnl-left-block">
-            <div class="mob-pnl-lbl">Total Holdings P&amp;L</div>
-            <div class="mob-pnl-val text-green" id="mobHoldingsTotalPL">₹0.00 (0.00%)</div>
-          </div>
-          <div class="mob-pnl-right-block">
-            <div class="mob-pnl-stat-line"><span>Invested:</span> <b id="mobHoldingsInvested">₹0.00</b></div>
-            <div class="mob-pnl-stat-line"><span>Current:</span> <b id="mobHoldingsCurrent">₹0.00</b></div>
-          </div>
-        </div>
-
-        <div class="page-title-row">
-          <div>
-            <h1 class="page-title">Holdings (CNC)</h1>
-            <p class="page-subtitle">Long-term equity investment portfolio with live valuation updates.</p>
-          </div>
-          <button class="btn-primary" onclick="app.openOrderModal('KVB', 'BUY')">
-            + Buy KVB Share
-          </button>
-        </div>
-
-        <div class="kpi-grid">
-          <div class="kpi-card kpi-card-cyan">
-            <div class="kpi-label">Total Investment</div>
-            <div class="kpi-val" id="holdingsTotalInvested">₹0.00</div>
-            <div class="kpi-sub">Cost basis</div>
-          </div>
-          <div class="kpi-card kpi-card-purple">
-            <div class="kpi-label">Current Value</div>
-            <div class="kpi-val text-purple" id="holdingsCurrentVal">₹0.00</div>
-            <div class="kpi-sub">Live valuation</div>
-          </div>
-          <div class="kpi-card kpi-card-emerald">
-            <div class="kpi-label">Total P&amp;L</div>
-            <div class="kpi-val" id="holdingsTotalPL">₹0.00 (0.00%)</div>
-            <div class="kpi-sub">Overall profit/loss</div>
-          </div>
-          <div class="kpi-card kpi-card-amber">
-            <div class="kpi-label">Day's P&amp;L</div>
-            <div class="kpi-val" id="holdingsDayPL">₹0.00</div>
-            <div class="kpi-sub">Change today</div>
-          </div>
-        </div>
-
-        <div class="table-card">
-          <div class="table-toolbar">
-            <input type="text" class="table-filter-input" placeholder="Search holdings...">
-            <span style="font-size:12px;color:var(--text-muted);">Real-time price recalculation</span>
+            <!-- Kite Subtabs: Holdings vs Positions -->
+            <div class="kite-subtabs-bar">
+              <button class="kite-subtab-btn active" id="portTabHoldings" onclick="app.switchView('holdings')">
+                Holdings <span class="kite-tab-pill-badge" id="portHoldingsTabBadge" style="display:none;">0</span>
+              </button>
+              <button class="kite-subtab-btn" id="portTabPositions" onclick="app.switchView('positions')">
+                Positions <span class="kite-tab-pill-badge" id="portPositionsTabBadge" style="display:none;">0</span>
+              </button>
+            </div>
           </div>
 
-          <!-- Mobile Cards Container for Holdings -->
-          <div class="mobile-portfolio-cards" id="holdingsMobileCards"></div>
+          <!-- Kite Total P&L Card -->
+          <div class="kite-total-pnl-card">
+            <div class="kite-pnl-card-title">Total P&amp;L</div>
+            <div class="kite-pnl-card-val text-green" id="holdingsPnlCardVal">₹0.00</div>
+            <div class="kite-pnl-card-sub" id="holdingsPnlCardSub" style="display:none;">
+              <span>Invested: <b id="holdingsCardInvested">₹0.00</b></span>
+              <span>•</span>
+              <span>Current: <b id="holdingsCardCurrent">₹0.00</b></span>
+            </div>
+          </div>
 
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Instrument</th>
-                <th class="text-right">Qty</th>
-                <th class="text-right">Avg. Cost</th>
-                <th class="text-right">LTP</th>
-                <th class="text-right">Cur. Value</th>
-                <th class="text-right">P&amp;L</th>
-                <th class="text-right">Day Chg</th>
-                <th class="text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="holdingsTableBody">
-              <!-- Rendered dynamically -->
-            </tbody>
-          </table>
+          <!-- Kite Search & Filter Bar -->
+          <div class="kite-filter-toolbar">
+            <div class="kite-ft-left">
+              <button class="kite-ft-icon-btn" onclick="app.togglePortSearch('holdings')" title="Search">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </button>
+              <button class="kite-ft-icon-btn" onclick="app.togglePortFilter('holdings')" title="Filter">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <line x1="4" y1="21" x2="4" y2="14"></line>
+                  <line x1="4" y1="10" x2="4" y2="3"></line>
+                  <line x1="12" y1="21" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12" y2="3"></line>
+                  <line x1="20" y1="21" x2="20" y2="16"></line>
+                  <line x1="20" y1="12" x2="20" y2="3"></line>
+                  <line x1="1" y1="14" x2="7" y2="14"></line>
+                  <line x1="9" y1="8" x2="15" y2="8"></line>
+                  <line x1="17" y1="16" x2="23" y2="16"></line>
+                </svg>
+              </button>
+              <button class="kite-ft-text-btn" onclick="app.togglePortGrouping('holdings')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <line x1="3" y1="12" x2="21" y2="12"></line>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+                <span>Group</span>
+              </button>
+            </div>
+            <div class="kite-ft-right">
+              <button class="kite-ft-sort-btn" onclick="app.sortPortItems('holdings')">
+                <span class="kite-blue-dot"></span>
+                <span>P&amp;L</span>
+              </button>
+            </div>
+          </div>
 
+          <!-- Expandable Search Input -->
+          <div class="kite-search-expand" id="holdingsSearchExpand" style="display:none;">
+            <input type="text" id="holdingsSearchInput" placeholder="Search holdings by symbol or name..." oninput="app.filterPortHoldings(this.value)">
+          </div>
+
+          <!-- Authentic Zerodha Kite Items List for Holdings -->
+          <div class="kite-items-list" id="holdingsKiteList"></div>
+
+          <!-- Empty State -->
           <div class="empty-state" id="holdingsEmptyState" style="display:none;">
             <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
@@ -304,80 +304,93 @@
 
       <!-- ==================== 4. POSITIONS VIEW ==================== -->
       <div class="view-section" id="view-positions">
-        <!-- Mobile Portfolio Subtabs (Zerodha Kite Mobile Style) -->
-        <div class="mobile-portfolio-tabs">
-          <button class="mobile-port-tab" onclick="app.switchView('holdings')">
-            Holdings <span class="port-tab-badge" id="mobHoldingsTabCount2">0</span>
-          </button>
-          <button class="mobile-port-tab active" onclick="app.switchView('positions')">
-            Positions <span class="port-tab-badge" id="mobPositionsTabCount2">0</span>
-          </button>
-        </div>
+        <div class="kite-portfolio-container">
+          <!-- Kite Portfolio Header -->
+          <div class="kite-port-header">
+            <div class="kite-port-title-row">
+              <h1 class="kite-port-title">Portfolio</h1>
+              <button class="kite-port-chevron-btn" onclick="app.openOptionChainModal('NIFTY 50')" title="Open Option Chain">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+            </div>
 
-        <!-- Mobile Total Live MTM P&L Strip with Option Chain shortcut -->
-        <div class="mobile-pnl-summary-bar" id="mobPositionsPnlBar">
-          <div class="mob-pnl-left-block">
-            <div class="mob-pnl-lbl">Total Positions P&amp;L</div>
-            <div class="mob-pnl-val text-green" id="mobPositionsTotalPL">₹0.00</div>
-          </div>
-          <div class="mob-pnl-right-block">
-            <button class="btn-oc-pill-mob" onclick="app.openOptionChainModal('NIFTY 50')">⚡ Option Chain</button>
-            <button class="btn-danger-pill-mob" onclick="app.exitAllPositions()">Square Off</button>
-          </div>
-        </div>
-
-        <div class="page-title-row">
-          <div>
-            <h1 class="page-title">Positions (Intraday &amp; F&amp;O Options)</h1>
-            <p class="page-subtitle">Intraday trading with 5x leverage and Options (Call &amp; Put) with live MTM P&amp;L.</p>
-          </div>
-          <button class="btn-danger" onclick="app.exitAllPositions()">
-            Square Off All Positions
-          </button>
-        </div>
-
-        <div class="kpi-grid">
-          <div class="kpi-card kpi-card-rose">
-            <div class="kpi-label">Live MTM P&amp;L</div>
-            <div class="kpi-val" id="positionsTotalMTM">₹0.00</div>
-            <div class="kpi-sub">Updates continuously with market ticks</div>
-          </div>
-        </div>
-
-        <div class="table-card">
-          <div class="table-toolbar">
-            <input type="text" class="table-filter-input" placeholder="Search positions...">
-            <span style="font-size:12px;color:var(--text-muted);">Real-time Mark-to-Market</span>
+            <!-- Kite Subtabs: Holdings vs Positions -->
+            <div class="kite-subtabs-bar">
+              <button class="kite-subtab-btn" id="portTabHoldings2" onclick="app.switchView('holdings')">
+                Holdings <span class="kite-tab-pill-badge" id="portHoldingsTabBadge2" style="display:none;">0</span>
+              </button>
+              <button class="kite-subtab-btn active" id="portTabPositions2" onclick="app.switchView('positions')">
+                Positions <span class="kite-tab-pill-badge" id="portPositionsTabBadge2" style="display:none;">0</span>
+              </button>
+            </div>
           </div>
 
-          <!-- Mobile Cards Container for Positions -->
-          <div class="mobile-portfolio-cards" id="positionsMobileCards"></div>
+          <!-- Kite Total P&L Card (Exact Match to Screenshot) -->
+          <div class="kite-total-pnl-card">
+            <div class="kite-pnl-card-title">Total P&amp;L</div>
+            <div class="kite-pnl-card-val text-green" id="positionsPnlCardVal">+0.00</div>
+          </div>
 
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Instrument</th>
-                <th class="text-right">Net Qty</th>
-                <th class="text-right">Avg. Price</th>
-                <th class="text-right">LTP</th>
-                <th class="text-right">P&amp;L</th>
-                <th class="text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody id="positionsTableBody">
-              <!-- Rendered dynamically -->
-            </tbody>
-          </table>
+          <!-- Kite Search & Filter Bar -->
+          <div class="kite-filter-toolbar">
+            <div class="kite-ft-left">
+              <button class="kite-ft-icon-btn" onclick="app.togglePortSearch('positions')" title="Search">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </button>
+              <button class="kite-ft-icon-btn" onclick="app.togglePortFilter('positions')" title="Filter">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <line x1="4" y1="21" x2="4" y2="14"></line>
+                  <line x1="4" y1="10" x2="4" y2="3"></line>
+                  <line x1="12" y1="21" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12" y2="3"></line>
+                  <line x1="20" y1="21" x2="20" y2="16"></line>
+                  <line x1="20" y1="12" x2="20" y2="3"></line>
+                  <line x1="1" y1="14" x2="7" y2="14"></line>
+                  <line x1="9" y1="8" x2="15" y2="8"></line>
+                  <line x1="17" y1="16" x2="23" y2="16"></line>
+                </svg>
+              </button>
+              <button class="kite-ft-text-btn" onclick="app.togglePortGrouping('positions')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <line x1="3" y1="12" x2="21" y2="12"></line>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+                <span>Group</span>
+              </button>
+            </div>
+            <div class="kite-ft-right">
+              <button class="kite-ft-sort-btn" onclick="app.sortPortItems('positions')">
+                <span class="kite-blue-dot"></span>
+                <span>P&amp;L</span>
+              </button>
+            </div>
+          </div>
 
+          <!-- Expandable Search Input -->
+          <div class="kite-search-expand" id="positionsSearchExpand" style="display:none;">
+            <input type="text" id="positionsSearchInput" placeholder="Search positions by symbol or contract..." oninput="app.filterPortPositions(this.value)">
+          </div>
+
+          <!-- Authentic Zerodha Kite Items List for Positions -->
+          <div class="kite-items-list" id="positionsKiteList"></div>
+
+          <!-- Empty State -->
           <div class="empty-state" id="positionsEmptyState" style="display:none;">
             <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
               <polyline points="17 6 23 6 23 12"></polyline>
             </svg>
             <div class="empty-title">No open positions</div>
-            <div class="empty-desc">Open the <b>Option Chain</b> to buy Call (CE) / Put (PE) options, or trade MIS intraday stocks.</div>
-            <button class="btn-primary" onclick="app.openOptionChainModal('NIFTY 50')">Open Option Chain</button>
+            <div class="empty-desc">Trade Call &amp; Put options or intraday stocks to see live MTM P&amp;L.</div>
+            <div style="display:flex;gap:10px;justify-content:center;margin-top:14px;">
+              <button class="btn-primary" onclick="app.openOptionChainModal('NIFTY 50')">⚡ Open Option Chain</button>
+            </div>
           </div>
         </div>
       </div>
@@ -871,7 +884,49 @@
     </div>
   </div>
 
-  <!-- ==================== ZERODHA KITE MOBILE BOTTOM NAVIGATION ==================== -->
+  <!-- ==================== ZERODHA KITE FLOATING ACTION BUTTON (FAB) ==================== -->
+  <button class="kite-fab-chart" id="kiteFabChartBtn" onclick="app.openFabChart()" title="View Chart / Analytics">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+      <polyline points="16 7 22 7 22 13"></polyline>
+    </svg>
+  </button>
+
+  <!-- ==================== ZERODHA KITE PORTFOLIO ITEM ACTION SHEET ==================== -->
+  <div class="modal-backdrop mobile-stock-sheet-backdrop" id="kiteItemSheetBackdrop" style="display:none;" onclick="if(event.target===this) app.closeItemSheet()">
+    <div class="kite-action-sheet">
+      <div class="kite-sheet-drag-handle"></div>
+      <div class="kite-sheet-header">
+        <div class="kite-sheet-header-left">
+          <div class="kite-sheet-symbol" id="kiteSheetSymbol">SENSEX 78300 PE</div>
+          <div class="kite-sheet-sub" id="kiteSheetSub">BFO • NRML • Net Qty: 0</div>
+        </div>
+        <div class="kite-sheet-header-right">
+          <div class="kite-sheet-ltp" id="kiteSheetLtp">₹114.20</div>
+          <div class="kite-sheet-pnl text-red" id="kiteSheetPnl">-1,191.00</div>
+        </div>
+      </div>
+
+      <div class="kite-sheet-actions-grid">
+        <button class="kite-sheet-btn sheet-btn-exit" id="kiteSheetBtnExit" onclick="app.actionSheetExit()">
+          🔴 Exit / Sell
+        </button>
+        <button class="kite-sheet-btn sheet-btn-add" id="kiteSheetBtnAdd" onclick="app.actionSheetAdd()">
+          🔵 + Add More
+        </button>
+        <button class="kite-sheet-btn sheet-btn-chart" id="kiteSheetBtnChart" onclick="app.actionSheetChart()">
+          📈 View Chart
+        </button>
+        <button class="kite-sheet-btn sheet-btn-depth" id="kiteSheetBtnDepth" onclick="app.actionSheetDepth()">
+          📊 Market Depth
+        </button>
+      </div>
+
+      <button class="kite-sheet-dismiss" onclick="app.closeItemSheet()">Dismiss</button>
+    </div>
+  </div>
+
+  <!-- ==================== ZERODHA KITE MOBILE BOTTOM NAVIGATION (5 TABS) ==================== -->
   <nav class="mobile-bottom-nav" id="mobileBottomNav">
     <button class="mob-nav-item active" data-mob-tab="watchlist" onclick="app.switchMobileTab('watchlist')">
       <div class="mob-nav-icon">
@@ -907,6 +962,19 @@
       <span class="mob-nav-label">Portfolio</span>
     </button>
 
+    <button class="mob-nav-item" data-mob-tab="bids" onclick="app.openOptionChainModal('NIFTY 50')">
+      <div class="mob-nav-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m14 13-7.5 7.5c-.8.8-2 .8-2.8 0s-.8-2 0-2.8L11.2 10.2"></path>
+          <path d="m16 16 6-6"></path>
+          <path d="m8 8 6-6"></path>
+          <path d="m9 7 8 8"></path>
+          <path d="m21 11-8-8"></path>
+        </svg>
+      </div>
+      <span class="mob-nav-label">Bids</span>
+    </button>
+
     <button class="mob-nav-item" data-mob-tab="funds" onclick="app.switchMobileTab('funds')">
       <div class="mob-nav-icon">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -914,7 +982,7 @@
           <circle cx="12" cy="7" r="4"></circle>
         </svg>
       </div>
-      <span class="mob-nav-label">Profile</span>
+      <span class="mob-nav-label" id="mobBottomNavUserId">TP7842</span>
     </button>
   </nav>
 
