@@ -321,11 +321,20 @@ class App {
 
     // Synchronize mobile bottom nav state
     if (viewName === "orders") {
+      this.activeMobileTab = "orders";
       this.updateMobileTabState("orders");
     } else if (viewName === "holdings" || viewName === "positions") {
+      this.activeMobileTab = "portfolio";
       this.updateMobileTabState("portfolio");
     } else if (viewName === "funds") {
+      this.activeMobileTab = "funds";
       this.updateMobileTabState("funds");
+    }
+
+    // Always ensure both mobile card views are rendered when in portfolio
+    if (viewName === "holdings" || viewName === "positions") {
+      this.renderHoldings();
+      this.renderPositions();
     }
 
     this.renderActiveView();
@@ -675,6 +684,13 @@ class App {
         spotEl.textContent = `₹${spotItem.price.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
       }
       this.refreshOptionChainRows();
+    }
+
+    // Check if trading day rolled over past midnight (23:59:59 -> new date)
+    const currentToday = store.getTodayDateString();
+    if (store.currentSessionDate && store.currentSessionDate !== currentToday) {
+      store.cleanupDailySession();
+      this.renderActiveView();
     }
 
     if (this.currentView === "holdings" || (window.innerWidth <= 768 && this.activeMobileTab === "portfolio")) {
@@ -1314,25 +1330,26 @@ class App {
       }
 
       cardsHtml.push(`
-        <div class="mob-pos-card ${isClosed ? 'mob-card-closed' : ''}">
-          <div class="mob-pos-top">
-            <div class="mob-card-qty-avg">
+        <div class="kite-card ${isClosed ? 'kite-card-closed' : ''}">
+          <div class="kite-card-row kite-row-top">
+            <div class="kite-card-qty-avg">
               <span>Qty. <b class="${isClosed ? 'text-muted' : 'font-bold'}">${h.quantity}</b></span>
-              <span style="margin-left:8px;">Avg. <b>${isClosed ? '0.00' : h.avgPrice.toFixed(2)}</b></span>
+              <span class="kite-sep">•</span>
+              <span>Avg. <b>${isClosed ? '0.00' : h.avgPrice.toFixed(2)}</b></span>
             </div>
             <span class="badge-tag tag-cnc">CNC</span>
           </div>
-          <div class="mob-pos-mid" style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
-            <div class="mob-pos-symbol" style="font-size:14.5px;font-weight:700;">${h.symbol}</div>
-            <div class="mob-pos-pnl ${isPositive ? 'text-green' : 'text-red'}" style="font-size:15px;font-weight:800;">
+          <div class="kite-card-row kite-row-mid">
+            <div class="kite-card-symbol">${h.symbol}</div>
+            <div class="kite-card-pnl ${isPositive ? 'text-green' : 'text-red'}">
               ${isPositive ? '+' : ''}${pl.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
-          <div class="mob-pos-bottom" style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:11.5px;color:var(--text-secondary);">
-            <span>${h.exchange || 'NSE'}</span>
-            <span>LTP <b>₹${ltp.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></span>
+          <div class="kite-card-row kite-row-bottom">
+            <div class="kite-card-exchange">${h.exchange || 'NSE'}</div>
+            <div class="kite-card-ltp">LTP <b>₹${ltp.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></div>
           </div>
-          <div class="mob-pos-actions" style="margin-top:8px;">
+          <div class="kite-card-actions">
             ${!isClosed ? `
               <button class="mob-btn-exit" onclick="app.openOrderModal('${h.symbol}', 'SELL')">Exit / Sell</button>
               <button class="mob-btn-add" onclick="app.openOrderModal('${h.symbol}', 'BUY')">+ Add More</button>
@@ -1470,25 +1487,26 @@ class App {
       const productTag = pos.isOption ? (pos.optionType === "CE" ? "badge-ce" : "badge-pe") : "tag-mis";
 
       cardsHtml.push(`
-        <div class="mob-pos-card ${isClosed ? 'mob-card-closed' : ''}">
-          <div class="mob-pos-top">
-            <div class="mob-card-qty-avg">
+        <div class="kite-card ${isClosed ? 'kite-card-closed' : ''}">
+          <div class="kite-card-row kite-row-top">
+            <div class="kite-card-qty-avg">
               <span>Qty. <b class="${isClosed ? 'text-muted' : (isLong ? 'text-blue' : 'text-red')}">${isClosed ? '0' : pos.quantity}</b></span>
-              <span style="margin-left:8px;">Avg. <b>${isClosed ? '0.00' : pos.avgPrice.toFixed(2)}</b></span>
+              <span class="kite-sep">•</span>
+              <span>Avg. <b>${isClosed ? '0.00' : pos.avgPrice.toFixed(2)}</b></span>
             </div>
             <span class="badge-tag ${productTag}">${pos.product || 'NRML'}</span>
           </div>
-          <div class="mob-pos-mid" style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
-            <div class="mob-pos-symbol" style="font-size:14.5px;font-weight:700;">${pos.symbol}</div>
-            <div class="mob-pos-pnl ${isProfitable ? 'text-green' : 'text-red'}" style="font-size:15px;font-weight:800;">
+          <div class="kite-card-row kite-row-mid">
+            <div class="kite-card-symbol">${pos.symbol}</div>
+            <div class="kite-card-pnl ${isProfitable ? 'text-green' : 'text-red'}">
               ${isProfitable ? '+' : ''}${pnl.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
-          <div class="mob-pos-bottom" style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:11.5px;color:var(--text-secondary);">
-            <span>${exchange}</span>
-            <span>LTP <b>₹${ltp.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></span>
+          <div class="kite-card-row kite-row-bottom">
+            <div class="kite-card-exchange">${exchange}</div>
+            <div class="kite-card-ltp">LTP <b>₹${ltp.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></div>
           </div>
-          <div class="mob-pos-actions" style="margin-top:8px;">
+          <div class="kite-card-actions">
             ${!isClosed ? `
               <button class="mob-btn-exit" onclick="app.exitPosition('${pos.id}')">Exit Position</button>
               <button class="mob-btn-add" onclick="app.openOrderModal('${pos.symbol}', 'BUY')">+ Add More</button>
@@ -1793,10 +1811,11 @@ class App {
     } else if (tab === "orders") {
       this.switchView("orders");
     } else if (tab === "portfolio") {
-      if (this.currentView !== "positions") {
-        this.switchView("holdings");
-      } else {
+      // Smart mobile default: if user has open positions and no holdings, default to positions; else holdings
+      if (this.currentView === "positions" || (store.positions.length > 0 && store.holdings.length === 0)) {
         this.switchView("positions");
+      } else {
+        this.switchView("holdings");
       }
     } else if (tab === "funds") {
       this.switchView("funds");

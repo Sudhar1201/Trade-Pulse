@@ -9,7 +9,8 @@ const STORAGE_KEYS = {
   POSITIONS_PREFIX: "tradepulse_positions_",
   ORDERS_PREFIX: "tradepulse_orders_",
   WATCHLISTS_PREFIX: "tradepulse_watchlists_",
-  SETTINGS: "tradepulse_settings"
+  SETTINGS: "tradepulse_settings",
+  SESSION_DATE_PREFIX: "tradepulse_session_date_"
 };
 
 const INITIAL_DEMO_CAPITAL = 20000.00;
@@ -57,8 +58,8 @@ class TradingStore {
 
     this.activeWatchlist = 1;
 
-    // Immediately clean up previous days' closed items and execute any pending AMO orders
-    this.cleanupPreviousDaysClosed();
+    // Immediately run daily session lifecycle: retain today's trades till night, reset to blank on next day
+    this.cleanupDailySession();
     this.executeAllPendingAMOOrders();
     this.reconcileFunds();
   }
@@ -71,15 +72,48 @@ class TradingStore {
     return `${yyyy}-${mm}-${dd}`;
   }
 
-  cleanupPreviousDaysClosed() {
+  // Daily Session Lifecycle:
+  // Shows holdings & positions throughout that day and night (till 23:59:59).
+  // On the next day, starts completely blank with fresh initial capital.
+  cleanupDailySession() {
     const today = this.getTodayDateString();
+    this.currentSessionDate = today;
+    const userEmail = this.currentUser ? this.currentUser.email : "guest";
+    const key = userEmail.toLowerCase().replace(/[^a-z0-9]/g, "_");
+    const lastSessionDate = this.load(STORAGE_KEYS.SESSION_DATE_PREFIX + key, null);
+
+    // If a new day has arrived (different date from last session date):
+    // Start completely BLANK as explicitly requested by user!
+    if (lastSessionDate && lastSessionDate !== today) {
+      this.holdings = [];
+      this.positions = [];
+      // Clear past executed orders so order book also reflects new day session
+      this.orders = Array.isArray(this.orders) ? this.orders.filter(o => o.createdDate === today) : [];
+      this.funds.availableCash = this.funds.initialCapital || INITIAL_DEMO_CAPITAL;
+      this.funds.usedMargin = 0.00;
+      this.funds.totalBalance = this.funds.availableCash;
+      this.funds.realizedPnL = 0.00;
+      this.save(STORAGE_KEYS.SESSION_DATE_PREFIX + key, today);
+      this.saveUserData();
+      return;
+    }
+
+    // Save current active day session date
+    this.save(STORAGE_KEYS.SESSION_DATE_PREFIX + key, today);
+
+    // If still today: keep holdings and positions that belong to today (available on screen till that day night!)
+    // Discard any items from an older date
     if (Array.isArray(this.holdings)) {
-      // Keep active holdings (qty > 0) OR holdings closed today (available on screen till that day night!)
-      this.holdings = this.holdings.filter(h => (h.quantity > 0) || (h.closedDate ? h.closedDate === today : true));
+      this.holdings = this.holdings.filter(h => {
+        const itemDate = h.closedDate || h.createdDate;
+        return !itemDate || itemDate === today;
+      });
     }
     if (Array.isArray(this.positions)) {
-      // Keep open positions (qty !== 0) OR positions closed today (available on screen till that day night!)
-      this.positions = this.positions.filter(p => (p.status === "OPEN" && p.quantity !== 0) || (p.closedDate ? p.closedDate === today : true));
+      this.positions = this.positions.filter(p => {
+        const itemDate = p.closedDate || p.createdDate;
+        return !itemDate || itemDate === today;
+      });
     }
   }
 
@@ -96,8 +130,8 @@ class TradingStore {
     this.positions = this.load(STORAGE_KEYS.POSITIONS_PREFIX + key, []);
     this.orders = this.load(STORAGE_KEYS.ORDERS_PREFIX + key, []);
     
-    // Retain today's closed items until day night and clean previous days
-    this.cleanupPreviousDaysClosed();
+    // Retain today's holdings & positions until night, start blank on next day
+    this.cleanupDailySession();
     this.reconcileFunds();
 
     // Load watchlists and ensure valid existing symbols
@@ -309,6 +343,7 @@ class TradingStore {
       optionType: stock.optionType || null,
       strike: stock.strike || null,
       isAMO: false,
+      createdDate: this.getTodayDateString(),
       statusMessage: isImmediate 
         ? `Executed at ₹${executionPrice.toFixed(2)}` 
         : `Limit order pending at ₹${executionPrice.toFixed(2)}`
@@ -438,6 +473,8 @@ class TradingStore {
             existingClosed.status = "OPEN";
             existingClosed.name = stock ? stock.name : symbol;
             existingClosed.exchange = stock ? stock.exchange : "NSE";
+            existingClosed.createdDate = this.getTodayDateString();
+            existingClosed.closedDate = null;
           } else {
             this.holdings.push({
               symbol,
@@ -537,7 +574,8 @@ class TradingStore {
           quantity: side === "BUY" ? quantity : -quantity,
           avgPrice: price,
           marginBlocked: marginUsed,
-          status: "OPEN"
+          status: "OPEN",
+          createdDate: this.getTodayDateString()
         });
       }
     }

@@ -2026,6 +2026,34 @@ body {
   display: none;
 }
 
+body[data-mobile-tab] .mobile-portfolio-cards {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  padding: 2px 0 24px 0 !important;
+  width: 100% !important;
+}
+
+body[data-mobile-tab] #view-orders .data-table,
+body[data-mobile-tab] #view-holdings .data-table,
+body[data-mobile-tab] #view-positions .data-table,
+body[data-mobile-tab] #view-orders .empty-state,
+body[data-mobile-tab] #view-holdings .empty-state,
+body[data-mobile-tab] #view-positions .empty-state {
+  display: none !important;
+}
+
+.kite-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 13px 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--shadow-sm);
+}
+
 .modal-close-icon {
   position: absolute;
   top: 12px;
@@ -2873,8 +2901,97 @@ body {
   /* On mobile screens, hide wide raw desktop tables for orders, holdings, and positions to prevent horizontal blowout */
   #view-orders .data-table,
   #view-holdings .data-table,
-  #view-positions .data-table {
+  #view-positions .data-table,
+  #view-orders .empty-state,
+  #view-holdings .empty-state,
+  #view-positions .empty-state {
     display: none !important;
+  }
+
+  /* Zerodha Kite Mobile Portfolio Card Styles (Holdings & Positions) */
+  .kite-card {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-md) !important;
+    padding: 13px 15px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    box-shadow: var(--shadow-sm) !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .kite-card:active {
+    transform: scale(0.99);
+  }
+
+  .kite-card.kite-card-closed {
+    border-left: 3px solid #10b981 !important;
+    background: rgba(16, 185, 129, 0.02) !important;
+  }
+
+  .kite-card-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+
+  .kite-card-qty-avg {
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .kite-card-qty-avg b {
+    color: var(--text-dark) !important;
+  }
+
+  .kite-sep {
+    margin: 0 4px;
+    color: var(--text-muted);
+  }
+
+  .kite-card-symbol {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text-dark) !important;
+    letter-spacing: -0.2px;
+    word-break: break-word;
+  }
+
+  .kite-card-pnl {
+    font-size: 15.5px;
+    font-weight: 800;
+    font-family: var(--font-number);
+    white-space: nowrap;
+  }
+
+  .kite-card-exchange {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .kite-card-ltp {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .kite-card-ltp b {
+    color: var(--text-dark) !important;
+    font-family: var(--font-number);
+  }
+
+  .kite-card-actions {
+    display: flex !important;
+    gap: 8px !important;
+    margin-top: 4px !important;
+    padding-top: 8px !important;
+    border-top: 1px dashed var(--border-color) !important;
   }
 
   .mob-pos-card {
