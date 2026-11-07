@@ -21,47 +21,94 @@ class MarketEngine {
     return new Date(utc + (3600000 * 5.5));
   }
 
+  // Official NSE/BSE Indian Stock Market Holidays Calendar
+  isMarketHoliday(istDate) {
+    const mm = String(istDate.getMonth() + 1).padStart(2, "0");
+    const dd = String(istDate.getDate()).padStart(2, "0");
+    const key = `${mm}-${dd}`;
+
+    const HOLIDAYS = {
+      "01-26": "Republic Day",
+      "03-08": "Maha Shivratri",
+      "03-25": "Holi",
+      "03-29": "Good Friday",
+      "04-11": "Eid-Ul-Fitr",
+      "04-14": "Dr. Babasaheb Ambedkar Jayanti",
+      "04-17": "Shri Ram Navami",
+      "05-01": "Maharashtra Day",
+      "06-17": "Bakri Id",
+      "07-17": "Muharram",
+      "08-15": "Independence Day",
+      "10-02": "Mahatma Gandhi Jayanti",
+      "11-01": "Diwali Laxmi Pujan",
+      "11-15": "Gurunanak Jayanti",
+      "12-25": "Christmas"
+    };
+
+    return HOLIDAYS[key] || null;
+  }
+
   // Determine if Indian Equity Market (NSE/BSE) is currently open
   getMarketStatus() {
     if (this.forceOpenSimulation) {
       return {
         isOpen: true,
         statusText: "LIVE (SIMULATED)",
-        message: "Market simulation active",
-        isSimulated: true
+        message: "Market simulation active • Live orders allowed",
+        isSimulated: true,
+        isWeekday: true,
+        holidayName: null,
+        reason: ""
       };
     }
 
     const ist = this.getISTDate();
     const day = ist.getDay(); // 0 = Sunday, 6 = Saturday
     const isWeekday = day >= 1 && day <= 5;
+    const dayName = ist.toLocaleDateString('en-US', { weekday: 'long' });
 
     const hours = ist.getHours();
     const minutes = ist.getMinutes();
     const totalMinutes = hours * 60 + minutes;
 
-    // NSE Trading Session: 09:15 AM (555 min) to 03:30 PM (930 min)
+    // Official NSE Trading Hours: 09:15 AM (555 min) to 03:30 PM (930 min) IST
     const openMinutes = 9 * 60 + 15;  // 555
     const closeMinutes = 15 * 60 + 30; // 930
 
-    const isOpen = isWeekday && totalMinutes >= openMinutes && totalMinutes < closeMinutes;
+    const holidayName = this.isMarketHoliday(ist);
+    const isHoliday = !!holidayName;
 
+    const isOpen = !isHoliday && isWeekday && totalMinutes >= openMinutes && totalMinutes < closeMinutes;
+
+    let reason = "";
     let nextSession = "";
-    if (day === 0) nextSession = "Opens Monday at 09:15 AM IST";
-    else if (day === 6) nextSession = "Opens Monday at 09:15 AM IST";
-    else if (day === 5 && totalMinutes >= closeMinutes) nextSession = "Opens Monday at 09:15 AM IST";
-    else if (totalMinutes < openMinutes) nextSession = "Opens today at 09:15 AM IST";
-    else nextSession = "Opens tomorrow at 09:15 AM IST";
+
+    if (!isWeekday) {
+      reason = `Market is CLOSED today (${dayName}). Live trading is only permitted Monday to Friday between 09:15 AM and 03:30 PM IST per the Indian Stock Market calendar.`;
+      nextSession = "Opens Monday at 09:15 AM IST";
+    } else if (isHoliday) {
+      reason = `Market is CLOSED today on account of ${holidayName} per the Indian Stock Market holiday calendar.`;
+      nextSession = "Opens next business day at 09:15 AM IST";
+    } else if (totalMinutes < openMinutes) {
+      reason = `Market opens today at 09:15 AM IST. Trading is only permitted during official market hours (09:15 AM to 03:30 PM IST).`;
+      nextSession = "Opens today at 09:15 AM IST";
+    } else if (totalMinutes >= closeMinutes) {
+      reason = `Market is CLOSED for today. Trading hours are 09:15 AM to 03:30 PM IST.`;
+      nextSession = (day === 5) ? "Opens Monday at 09:15 AM IST" : "Opens tomorrow at 09:15 AM IST";
+    }
 
     const timeFormatted = ist.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
     return {
       isOpen,
       statusText: isOpen ? "MARKET OPEN" : "MARKET CLOSED",
-      message: isOpen ? `Market Live (Closes 03:30 PM IST) • IST: ${timeFormatted}` : `Market Closed (${nextSession}) • Last Traded Prices Active`,
+      message: isOpen ? `Market Live (Closes 03:30 PM IST) • IST: ${timeFormatted}` : `Market Closed (${nextSession})`,
       istTime: timeFormatted,
       nextSession,
-      isWeekday
+      isWeekday,
+      dayName,
+      holidayName,
+      reason
     };
   }
 
@@ -114,6 +161,8 @@ class MarketEngine {
 
   setForceOpen(force) {
     this.forceOpenSimulation = !!force;
+    const status = this.getMarketStatus();
+    this.notifyStatusListeners(status);
     this.checkMarketAndTick();
   }
 

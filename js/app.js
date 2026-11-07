@@ -832,7 +832,9 @@ class App {
       }
     }
 
-    const marketStatus = engine.getMarketStatus();
+    const marketStatus = (typeof engine !== "undefined" && engine && typeof engine.getMarketStatus === "function")
+      ? engine.getMarketStatus()
+      : { isOpen: true };
     const amoBanner = document.getElementById("amoNoticeBanner");
     if (amoBanner) {
       if (marketStatus.isOpen) {
@@ -840,8 +842,13 @@ class App {
       } else {
         amoBanner.style.display = "flex";
         amoBanner.innerHTML = `
-          <span style="font-size:16px;">💡</span>
-          <span><b>Demo Practice Mode:</b> Market is closed (09:15 - 15:30 IST). Demo market orders execute immediately at LTP for continuous practice!</span>
+          <div style="display:flex;align-items:flex-start;gap:8px;">
+            <span style="font-size:18px;line-height:1;">🛑</span>
+            <div>
+              <div style="font-weight:700;color:#ef4444;margin-bottom:2px;">Market is CLOSED today (${marketStatus.dayName || 'Weekend'})</div>
+              <div style="font-size:11.5px;color:var(--text-secondary);line-height:1.4;">${marketStatus.reason || "Live trading is strictly permitted Monday to Friday between 09:15 AM and 03:30 PM IST per the Indian Stock Market calendar."}</div>
+            </div>
+          </div>
         `;
       }
     }
@@ -904,6 +911,19 @@ class App {
       marginAvailEl.textContent = `₹${available.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
     }
 
+    const marketStatus = (typeof engine !== "undefined" && engine && typeof engine.getMarketStatus === "function")
+      ? engine.getMarketStatus()
+      : { isOpen: true };
+
+    if (!marketStatus.isOpen && submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.style.opacity = "0.55";
+      submitBtn.style.cursor = "not-allowed";
+      submitBtn.textContent = `Market Closed (${marketStatus.statusText})`;
+      submitBtn.title = marketStatus.reason || "Trading is closed";
+      return;
+    }
+
     if (submitBtn && this.activeOrderSide === "BUY") {
       if (marginReq > available) {
         submitBtn.disabled = true;
@@ -921,6 +941,16 @@ class App {
   }
 
   handleOrderSubmit() {
+    const marketStatus = (typeof engine !== "undefined" && engine && typeof engine.getMarketStatus === "function")
+      ? engine.getMarketStatus()
+      : { isOpen: true };
+
+    if (!marketStatus.isOpen) {
+      if (typeof sounds !== "undefined" && sounds.playError) sounds.playError();
+      window.showToast(marketStatus.reason || "Market is CLOSED. Live trading is strictly permitted Monday to Friday between 09:15 AM and 03:30 PM IST per the Indian Stock Market calendar.", "error");
+      return;
+    }
+
     const qtyInput = document.getElementById("orderQtyInput");
     const priceInput = document.getElementById("orderPriceInput");
 
@@ -942,15 +972,10 @@ class App {
       this.closeOrderModal();
       this.renderUserQuickFunds();
 
-      // On mobile screen, automatically navigate to Portfolio tab so the user immediately sees their trade and live P&L
+      // On mobile screen, automatically navigate to Positions tab (all today's trades are intraday in Positions!)
       if (window.innerWidth <= 768) {
-        if (this.activeProduct === "CNC") {
-          this.switchMobileTab("portfolio");
-          this.switchView("holdings");
-        } else {
-          this.switchMobileTab("portfolio");
-          this.switchView("positions");
-        }
+        this.switchMobileTab("portfolio");
+        this.switchView("positions");
       }
       this.renderActiveView();
     } else {
@@ -1279,9 +1304,12 @@ class App {
         mobCards.innerHTML = `
           <div class="mob-empty-msg">
             <div style="font-size:24px;margin-bottom:6px;">💼</div>
-            <div style="font-weight:700;color:var(--text-dark);margin-bottom:4px;">No active holdings</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Use your demo capital to buy CNC equity shares from the watchlist.</div>
-            <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="app.switchMobileTab('watchlist')">Browse Watchlist</button>
+            <div style="font-weight:700;color:var(--text-dark);margin-bottom:4px;">No holdings held for &gt; 1 day</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;line-height:1.4;">Stocks bought today appear in <b>Positions</b> (intraday) and automatically move to Holdings on the next trading day (T+1 Demat settlement).</div>
+            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+              <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="app.switchMobileTab('portfolio'); app.switchView('positions');">View Positions</button>
+              <button class="btn-secondary" style="font-size:12px;padding:6px 14px;" onclick="app.simulateNextDay()">🌅 Fast-Forward (T+1)</button>
+            </div>
           </div>
         `;
       }
@@ -1484,7 +1512,7 @@ class App {
         exchange = stock.exchange;
       }
 
-      const productTag = pos.isOption ? (pos.optionType === "CE" ? "badge-ce" : "badge-pe") : "tag-mis";
+      const productTag = pos.isOption ? (pos.optionType === "CE" ? "badge-ce" : "badge-pe") : (pos.product === "CNC" ? "tag-cnc" : "tag-mis");
 
       cardsHtml.push(`
         <div class="kite-card ${isClosed ? 'kite-card-closed' : ''}">
@@ -1508,7 +1536,7 @@ class App {
           </div>
           <div class="kite-card-actions">
             ${!isClosed ? `
-              <button class="mob-btn-exit" onclick="app.exitPosition('${pos.id}')">Exit Position</button>
+              <button class="mob-btn-exit" onclick="app.exitPosition('${pos.id}')">Exit / Sell</button>
               <button class="mob-btn-add" onclick="app.openOrderModal('${pos.symbol}', 'BUY')">+ Add More</button>
             ` : `
               <button class="mob-btn-add" style="width:100%;" onclick="app.openOrderModal('${pos.symbol}', 'BUY')">+ Trade ${pos.symbol} Again</button>
@@ -1520,8 +1548,8 @@ class App {
       return `
         <tr class="${isClosed ? 'row-closed' : ''}">
           <td>
-            <span class="badge-tag ${pos.isOption ? (pos.optionType === 'CE' ? 'badge-ce' : 'badge-pe') : 'tag-mis'}">
-              ${pos.isOption ? `${pos.optionType} (${pos.product})` : 'MIS 5x'}
+            <span class="badge-tag ${pos.isOption ? (pos.optionType === 'CE' ? 'badge-ce' : 'badge-pe') : (pos.product === 'CNC' ? 'tag-cnc' : 'tag-mis')}">
+              ${pos.isOption ? `${pos.optionType} (${pos.product})` : (pos.product === 'CNC' ? 'CNC' : 'MIS 5x')}
             </span>
           </td>
           <td>
@@ -1576,12 +1604,19 @@ class App {
       this.renderUserQuickFunds();
       this.renderPositions();
     } else {
+      sounds.playError();
       window.showToast(res.message, "error");
     }
   }
 
   exitAllPositions() {
-    const count = store.exitAllPositions();
+    const res = store.exitAllPositions();
+    if (!res.success) {
+      sounds.playError();
+      window.showToast(res.message, "error");
+      return;
+    }
+    const count = res.count || 0;
     if (count > 0) {
       window.playChime();
       window.showToast(`Squared off all ${count} open positions!`, "success");
@@ -1589,6 +1624,24 @@ class App {
       this.renderPositions();
     } else {
       window.showToast("No open positions to square off.", "info");
+    }
+  }
+
+  simulateNextDay() {
+    const res = store.simulateNextTradingDay();
+    if (res && res.success) {
+      window.playChime();
+      window.showToast(
+        res.movedCount > 0
+          ? `T+1 Settled: ${res.movedCount} open CNC position(s) graduated to Holdings (held > 1 day)!`
+          : `Advanced session to ${res.nextDate}. Ready for new trading day.`,
+        "success"
+      );
+      this.renderUserQuickFunds();
+      this.renderHoldings();
+      this.renderPositions();
+      this.renderOrders();
+      this.updateNavbarBadges();
     }
   }
 

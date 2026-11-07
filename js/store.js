@@ -72,9 +72,11 @@ class TradingStore {
     return `${yyyy}-${mm}-${dd}`;
   }
 
-  // Daily Session Lifecycle:
-  // Shows holdings & positions throughout that day and night (till 23:59:59).
-  // On the next day, starts completely blank with fresh initial capital.
+  // Daily Session Lifecycle per Indian Stock Market Settlement Rules:
+  // 1. On purchase day (T), stocks appear in "Positions" (intraday trading).
+  // 2. Only stocks held for more than 1 day graduate to "Holdings" (T+1 Demat settlement).
+  // 3. Sold stocks remain on screen till that day's night (23:59:59 IST) like Zerodha Kite.
+  // 4. On the next day, closed stocks are cleared (blank) and positions start fresh.
   cleanupDailySession() {
     const today = this.getTodayDateString();
     this.currentSessionDate = today;
@@ -82,18 +84,52 @@ class TradingStore {
     const key = userEmail.toLowerCase().replace(/[^a-z0-9]/g, "_");
     const lastSessionDate = this.load(STORAGE_KEYS.SESSION_DATE_PREFIX + key, null);
 
-    // If a new day has arrived (different date from last session date):
-    // Start completely BLANK as explicitly requested by user!
+    // If a new day has arrived:
     if (lastSessionDate && lastSessionDate !== today) {
-      this.holdings = [];
+      // 1. Graduate open CNC positions from previous day into this.holdings (now held > 1 day)
+      if (Array.isArray(this.positions)) {
+        this.positions.forEach(pos => {
+          if (pos.product === "CNC" && pos.quantity > 0 && pos.status === "OPEN") {
+            const existingH = this.holdings.find(h => h.symbol === pos.symbol && h.quantity > 0);
+            if (existingH) {
+              const totalQty = existingH.quantity + pos.quantity;
+              const totalCost = (existingH.quantity * existingH.avgPrice) + (pos.quantity * pos.avgPrice);
+              existingH.quantity = totalQty;
+              existingH.avgPrice = +(totalCost / totalQty).toFixed(2);
+              existingH.investedValue = +(totalQty * existingH.avgPrice).toFixed(2);
+              existingH.status = "OPEN";
+              existingH.holdingDays = (existingH.holdingDays || 1) + 1;
+            } else {
+              this.holdings.push({
+                symbol: pos.symbol,
+                name: pos.name,
+                exchange: pos.exchange,
+                quantity: pos.quantity,
+                avgPrice: pos.avgPrice,
+                investedValue: +(pos.quantity * pos.avgPrice).toFixed(2),
+                status: "OPEN",
+                createdDate: pos.createdDate || lastSessionDate,
+                holdingDays: 1
+              });
+            }
+          }
+        });
+      }
+
+      // 2. Clear closed holdings from past dates (next day starts blank of closed items!)
+      // Keep only active holdings held for > 1 day
+      if (Array.isArray(this.holdings)) {
+        this.holdings = this.holdings.filter(h => h.quantity > 0 && h.status === "OPEN");
+      }
+
+      // 3. Clear positions for the new day's fresh intraday trading
       this.positions = [];
-      // Clear past executed orders so order book also reflects new day session
+
+      // 4. Clear past executed orders
       this.orders = Array.isArray(this.orders) ? this.orders.filter(o => o.createdDate === today) : [];
-      this.funds.availableCash = this.funds.initialCapital || INITIAL_DEMO_CAPITAL;
-      this.funds.usedMargin = 0.00;
-      this.funds.totalBalance = this.funds.availableCash;
-      this.funds.realizedPnL = 0.00;
+
       this.save(STORAGE_KEYS.SESSION_DATE_PREFIX + key, today);
+      this.reconcileFunds();
       this.saveUserData();
       return;
     }
@@ -101,20 +137,117 @@ class TradingStore {
     // Save current active day session date
     this.save(STORAGE_KEYS.SESSION_DATE_PREFIX + key, today);
 
-    // If still today: keep holdings and positions that belong to today (available on screen till that day night!)
-    // Discard any items from an older date
+    // Within the same day:
+    // Move any CNC stocks created today out of holdings into positions (Day T belongs in Positions!)
     if (Array.isArray(this.holdings)) {
+      const createdToday = [];
       this.holdings = this.holdings.filter(h => {
-        const itemDate = h.closedDate || h.createdDate;
-        return !itemDate || itemDate === today;
+        if (h.createdDate === today && h.status === "OPEN" && (!h.holdingDays || h.holdingDays === 0)) {
+          createdToday.push(h);
+          return false;
+        }
+        // Remove closed holdings from older dates (only keep today's closed holdings till night)
+        if (h.status === "CLOSED" && h.closedDate && h.closedDate !== today) {
+          return false;
+        }
+        return true;
+      });
+
+      createdToday.forEach(h => {
+        if (!Array.isArray(this.positions)) this.positions = [];
+        const existingPos = this.positions.find(p => p.symbol === h.symbol && p.product === "CNC" && p.status === "OPEN");
+        if (!existingPos) {
+          this.positions.push({
+            id: "POS-" + Math.floor(1000 + Math.random() * 9000),
+            symbol: h.symbol,
+            name: h.name,
+            exchange: h.exchange,
+            product: "CNC",
+            quantity: h.quantity,
+            avgPrice: h.avgPrice,
+            marginBlocked: h.investedValue || (h.quantity * h.avgPrice),
+            status: "OPEN",
+            isOption: false,
+            createdDate: today,
+            holdingDays: 0
+          });
+        }
       });
     }
+
+    // Filter out past closed positions
     if (Array.isArray(this.positions)) {
       this.positions = this.positions.filter(p => {
-        const itemDate = p.closedDate || p.createdDate;
-        return !itemDate || itemDate === today;
+        if (p.status === "CLOSED" && p.closedDate && p.closedDate !== today) {
+          return false;
+        }
+        return true;
       });
     }
+  }
+
+  // Fast-forward simulation to next trading day (T+1 settlement demo)
+  simulateNextTradingDay() {
+    const curDate = new Date(this.currentSessionDate || this.getTodayDateString());
+    curDate.setDate(curDate.getDate() + 1);
+    // If lands on Saturday or Sunday, advance to Monday
+    if (curDate.getDay() === 6) curDate.setDate(curDate.getDate() + 2);
+    else if (curDate.getDay() === 0) curDate.setDate(curDate.getDate() + 1);
+
+    const yyyy = curDate.getFullYear();
+    const mm = String(curDate.getMonth() + 1).padStart(2, "0");
+    const dd = String(curDate.getDate()).padStart(2, "0");
+    const nextDateStr = `${yyyy}-${mm}-${dd}`;
+
+    const userEmail = this.currentUser ? this.currentUser.email : "guest";
+    const key = userEmail.toLowerCase().replace(/[^a-z0-9]/g, "_");
+
+    let movedCount = 0;
+    if (Array.isArray(this.positions)) {
+      this.positions.forEach(pos => {
+        if (pos.product === "CNC" && pos.quantity > 0 && pos.status === "OPEN") {
+          const existingH = this.holdings.find(h => h.symbol === pos.symbol && h.quantity > 0);
+          if (existingH) {
+            const totalQty = existingH.quantity + pos.quantity;
+            const totalCost = (existingH.quantity * existingH.avgPrice) + (pos.quantity * pos.avgPrice);
+            existingH.quantity = totalQty;
+            existingH.avgPrice = +(totalCost / totalQty).toFixed(2);
+            existingH.investedValue = +(totalQty * existingH.avgPrice).toFixed(2);
+            existingH.status = "OPEN";
+            existingH.holdingDays = (existingH.holdingDays || 1) + 1;
+          } else {
+            this.holdings.push({
+              symbol: pos.symbol,
+              name: pos.name,
+              exchange: pos.exchange,
+              quantity: pos.quantity,
+              avgPrice: pos.avgPrice,
+              investedValue: +(pos.quantity * pos.avgPrice).toFixed(2),
+              status: "OPEN",
+              createdDate: pos.createdDate || this.currentSessionDate,
+              holdingDays: 1
+            });
+          }
+          movedCount++;
+        }
+      });
+    }
+
+    // Retain only active holdings (>1 day holding)
+    if (Array.isArray(this.holdings)) {
+      this.holdings = this.holdings.filter(h => h.quantity > 0 && h.status === "OPEN");
+    }
+
+    // Clear positions for the new day
+    this.positions = [];
+    this.orders = Array.isArray(this.orders) ? this.orders.filter(o => o.createdDate === nextDateStr) : [];
+
+    this.currentSessionDate = nextDateStr;
+    this.save(STORAGE_KEYS.SESSION_DATE_PREFIX + key, nextDateStr);
+    this.reconcileFunds();
+    this.saveUserData();
+
+    return { success: true, nextDate: nextDateStr, movedCount };
   }
 
   loadUserData(email) {
@@ -280,6 +413,19 @@ class TradingStore {
       return { success: false, message: "Please enter a valid quantity greater than 0." };
     }
 
+    // Strict Indian Stock Market Calendar Trading Enforcement:
+    // Taking of buy or sell trade is strictly permitted Monday to Friday between 09:15 AM and 03:30 PM IST (excluding exchange holidays).
+    const market = (typeof engine !== "undefined" && engine && typeof engine.getMarketStatus === "function")
+      ? engine.getMarketStatus()
+      : { isOpen: true };
+
+    if (!market.isOpen) {
+      return {
+        success: false,
+        message: market.reason || "Market is CLOSED. Live trading is strictly permitted Monday to Friday between 09:15 AM and 03:30 PM IST per the Indian Stock Market calendar."
+      };
+    }
+
     const stock = STOCKS_MAP.get(symbol);
     if (!stock) {
       return { success: false, message: `Instrument ${symbol} not found.` };
@@ -299,14 +445,18 @@ class TradingStore {
       }
     }
 
-    // Validation for SELL CNC orders: Holdings check (for Equities)
+    // Validation for SELL CNC orders: Check holdings (>1 day) + today's CNC positions
     if (side === "SELL" && product === "CNC" && !isOption) {
       const holding = this.holdings.find(h => h.symbol === symbol && h.quantity > 0);
-      if (!holding || holding.quantity < quantity) {
-        const available = holding ? holding.quantity : 0;
+      const pos = this.positions.find(p => p.symbol === symbol && p.product === "CNC" && p.status === "OPEN" && p.quantity > 0);
+      const availableHolding = holding ? holding.quantity : 0;
+      const availablePos = pos ? pos.quantity : 0;
+      const totalAvailable = availableHolding + availablePos;
+
+      if (totalAvailable < quantity) {
         return {
           success: false,
-          message: `Insufficient holdings to sell. You currently hold ${available} share(s) of ${symbol}.`
+          message: `Insufficient shares to sell. You currently have ${totalAvailable} share(s) available (${availableHolding} in Holdings, ${availablePos} in Positions).`
         };
       }
     }
@@ -455,64 +605,104 @@ class TradingStore {
         this.funds.availableCash -= marginUsed;
         this.funds.usedMargin += marginUsed;
 
-        const existing = this.holdings.find(h => h.symbol === symbol && h.quantity > 0);
-        if (existing) {
-          const totalQty = existing.quantity + quantity;
-          const totalCost = (existing.quantity * existing.avgPrice) + (quantity * price);
-          existing.quantity = totalQty;
-          existing.avgPrice = +(totalCost / totalQty).toFixed(2);
-          existing.investedValue = +(totalQty * existing.avgPrice).toFixed(2);
-          existing.status = "OPEN";
+        // On purchase day (Day T), equity CNC is an intraday purchase awaiting T+1 settlement and resides in Positions!
+        const existingPos = this.positions.find(p => p.symbol === symbol && p.product === "CNC" && p.status === "OPEN");
+        if (existingPos) {
+          const totalQty = existingPos.quantity + quantity;
+          const totalCost = (existingPos.quantity * existingPos.avgPrice) + (quantity * price);
+          existingPos.quantity = totalQty;
+          existingPos.avgPrice = +(totalCost / totalQty).toFixed(2);
+          existingPos.marginBlocked += marginUsed;
+          existingPos.status = "OPEN";
         } else {
-          // If holding was sold earlier today, reactivate it with new purchase
-          const existingClosed = this.holdings.find(h => h.symbol === symbol && h.quantity === 0);
+          // If was closed earlier today, reactivate
+          const existingClosed = this.positions.find(p => p.symbol === symbol && p.product === "CNC" && p.status === "CLOSED");
           if (existingClosed) {
             existingClosed.quantity = quantity;
             existingClosed.avgPrice = price;
-            existingClosed.investedValue = +(quantity * price).toFixed(2);
+            existingClosed.marginBlocked = marginUsed;
             existingClosed.status = "OPEN";
             existingClosed.name = stock ? stock.name : symbol;
             existingClosed.exchange = stock ? stock.exchange : "NSE";
             existingClosed.createdDate = this.getTodayDateString();
             existingClosed.closedDate = null;
           } else {
-            this.holdings.push({
+            this.positions.push({
+              id: "POS-" + Math.floor(1000 + Math.random() * 9000),
               symbol,
               name: stock ? stock.name : symbol,
               exchange: stock ? stock.exchange : "NSE",
+              product: "CNC",
               quantity,
               avgPrice: price,
-              investedValue: +(quantity * price).toFixed(2),
+              marginBlocked: marginUsed,
               status: "OPEN",
-              createdDate: this.getTodayDateString()
+              isOption: false,
+              createdDate: this.getTodayDateString(),
+              holdingDays: 0
             });
           }
         }
       } else if (side === "SELL") {
-        const existingIdx = this.holdings.findIndex(h => h.symbol === symbol && h.quantity > 0);
-        if (existingIdx !== -1) {
-          const h = this.holdings[existingIdx];
-          const soldQty = Math.min(quantity, h.quantity);
-          const proceed = +(soldQty * price).toFixed(2);
-          const costBasis = +(soldQty * h.avgPrice).toFixed(2);
-          const realizedProfit = +(proceed - costBasis).toFixed(2);
+        let remainingToSell = quantity;
 
-          this.funds.availableCash = +(this.funds.availableCash + proceed).toFixed(2);
-          this.funds.realizedPnL = +( (this.funds.realizedPnL || 0) + realizedProfit ).toFixed(2);
+        // 1. First, square off / sell from today's open CNC position if exists
+        const pos = this.positions.find(p => p.symbol === symbol && p.product === "CNC" && p.status === "OPEN" && p.quantity > 0);
+        if (pos && remainingToSell > 0) {
+          const soldFromPos = Math.min(remainingToSell, pos.quantity);
+          const posCostBasis = +(soldFromPos * pos.avgPrice).toFixed(2);
+          const posProceeds = +(soldFromPos * price).toFixed(2);
+          const posRealizedPL = +(posProceeds - posCostBasis).toFixed(2);
 
-          h.quantity -= soldQty;
-          h.realizedPL = +( (h.realizedPL || 0) + realizedProfit ).toFixed(2);
-          h.exitPrice = price;
-          h.exitTime = new Date().toLocaleTimeString();
-          h.closedDate = this.getTodayDateString();
+          const releasedMargin = posCostBasis;
+          this.funds.availableCash += (releasedMargin + posRealizedPL);
+          this.funds.usedMargin = Math.max(0, this.funds.usedMargin - releasedMargin);
+          this.funds.realizedPnL = +( (this.funds.realizedPnL || 0) + posRealizedPL ).toFixed(2);
 
-          if (h.quantity <= 0) {
-            h.quantity = 0;
-            h.investedValue = 0;
-            h.status = "CLOSED";
-            // Retained on screen till that day night (like Zerodha Kite)!
+          pos.realizedPL = +( (pos.realizedPL || 0) + posRealizedPL ).toFixed(2);
+          pos.exitPrice = price;
+          pos.exitTime = new Date().toLocaleTimeString();
+
+          if (soldFromPos === pos.quantity) {
+            pos.status = "CLOSED";
+            pos.quantity = 0;
+            pos.avgPrice = 0;
+            pos.marginBlocked = 0;
+            pos.closedDate = this.getTodayDateString();
           } else {
-            h.investedValue = +(h.quantity * h.avgPrice).toFixed(2);
+            pos.quantity -= soldFromPos;
+            pos.marginBlocked = Math.max(0, pos.marginBlocked - releasedMargin);
+          }
+
+          remainingToSell -= soldFromPos;
+        }
+
+        // 2. Next, sell any remaining quantity from overnight holdings (held > 1 day)
+        if (remainingToSell > 0) {
+          const h = this.holdings.find(item => item.symbol === symbol && item.quantity > 0);
+          if (h) {
+            const soldFromHoldings = Math.min(remainingToSell, h.quantity);
+            const proceed = +(soldFromHoldings * price).toFixed(2);
+            const costBasis = +(soldFromHoldings * h.avgPrice).toFixed(2);
+            const realizedProfit = +(proceed - costBasis).toFixed(2);
+
+            this.funds.availableCash = +(this.funds.availableCash + proceed).toFixed(2);
+            this.funds.realizedPnL = +( (this.funds.realizedPnL || 0) + realizedProfit ).toFixed(2);
+
+            h.quantity -= soldFromHoldings;
+            h.realizedPL = +( (h.realizedPL || 0) + realizedProfit ).toFixed(2);
+            h.exitPrice = price;
+            h.exitTime = new Date().toLocaleTimeString();
+            h.closedDate = this.getTodayDateString();
+
+            if (h.quantity <= 0) {
+              h.quantity = 0;
+              h.investedValue = 0;
+              h.status = "CLOSED";
+              // Retained on screen till that day night (like Zerodha Kite)!
+            } else {
+              h.investedValue = +(h.quantity * h.avgPrice).toFixed(2);
+            }
           }
         }
       }
@@ -693,6 +883,17 @@ class TradingStore {
   }
 
   exitPosition(positionId) {
+    const market = (typeof engine !== "undefined" && engine && typeof engine.getMarketStatus === "function")
+      ? engine.getMarketStatus()
+      : { isOpen: true };
+
+    if (!market.isOpen) {
+      return {
+        success: false,
+        message: market.reason || "Market is CLOSED. Live trading is strictly permitted Monday to Friday between 09:15 AM and 03:30 PM IST per the Indian Stock Market calendar."
+      };
+    }
+
     const pos = this.positions.find(p => p.id === positionId && p.status === "OPEN");
     if (!pos) return { success: false, message: "Position not found or already closed." };
 
@@ -714,13 +915,24 @@ class TradingStore {
   }
 
   exitAllPositions() {
+    const market = (typeof engine !== "undefined" && engine && typeof engine.getMarketStatus === "function")
+      ? engine.getMarketStatus()
+      : { isOpen: true };
+
+    if (!market.isOpen) {
+      return {
+        success: false,
+        message: market.reason || "Market is CLOSED. Live trading is strictly permitted Monday to Friday between 09:15 AM and 03:30 PM IST per the Indian Stock Market calendar."
+      };
+    }
+
     const openPositions = this.positions.filter(p => p.status === "OPEN");
     let count = 0;
     openPositions.forEach(p => {
-      this.exitPosition(p.id);
-      count++;
+      const res = this.exitPosition(p.id);
+      if (res && res.success) count++;
     });
-    return count;
+    return { success: true, count };
   }
 
   resetFunds(capital = INITIAL_DEMO_CAPITAL) {
