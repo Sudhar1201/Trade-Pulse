@@ -91,6 +91,9 @@
                 <span style="font-size:10.5px;">Test Ticks</span>
               </label>
             </div>
+            <button class="btn-secondary" style="width:100%;text-align:left;font-size:12px;padding:6px 10px;" onclick="app.simulateNextDay()">
+              🌅 Fast-Forward to Next Day (T+1)
+            </button>
             <button class="btn-secondary" style="width:100%;text-align:left;font-size:12px;padding:6px 10px;" onclick="app.openAuthModal('signup')">
               ✨ Sign Up New Account
             </button>
@@ -289,9 +292,12 @@
               <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
               <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
             </svg>
-            <div class="empty-title">You don't have any holdings yet</div>
-            <div class="empty-desc">Use your <b>₹20,000 demo capital</b> to buy CNC equity shares like L&amp;T or Karur Vysya Bank (KVB).</div>
-            <button class="btn-primary" onclick="app.openOrderModal('KVB', 'BUY')">Buy KVB Share</button>
+            <div class="empty-title">No holdings held for more than 1 day</div>
+            <div class="empty-desc">Stocks bought today appear in <b>Positions</b> (intraday) and automatically move to <b>Holdings</b> after holding for more than 1 day (T+1 Demat settlement).</div>
+            <div style="display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap;">
+              <button class="btn-primary" onclick="app.switchView('positions')">View Today's Positions</button>
+              <button class="btn-secondary" onclick="app.simulateNextDay()">🌅 Fast-Forward to Next Day (T+1)</button>
+            </div>
           </div>
         </div>
       </div>
@@ -389,6 +395,9 @@
             </div>
           </div>
           <div class="mob-prof-actions-row">
+            <button class="btn-secondary" style="flex:1;font-size:12px;padding:8px;" onclick="app.simulateNextDay()">
+              🌅 Fast-Forward (T+1)
+            </button>
             <button class="btn-secondary" style="flex:1;font-size:12px;padding:8px;" onclick="app.openAuthModal('signup')">
               👤 New Account
             </button>
