@@ -57,9 +57,30 @@ class TradingStore {
 
     this.activeWatchlist = 1;
 
-    // Immediately resolve and execute any lingering AMO PENDING orders so trading works smoothly!
+    // Immediately clean up previous days' closed items and execute any pending AMO orders
+    this.cleanupPreviousDaysClosed();
     this.executeAllPendingAMOOrders();
     this.reconcileFunds();
+  }
+
+  getTodayDateString() {
+    const d = (typeof engine !== "undefined" && engine && typeof engine.getISTDate === "function") ? engine.getISTDate() : new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  cleanupPreviousDaysClosed() {
+    const today = this.getTodayDateString();
+    if (Array.isArray(this.holdings)) {
+      // Keep active holdings (qty > 0) OR holdings closed today (available on screen till that day night!)
+      this.holdings = this.holdings.filter(h => (h.quantity > 0) || (h.closedDate ? h.closedDate === today : true));
+    }
+    if (Array.isArray(this.positions)) {
+      // Keep open positions (qty !== 0) OR positions closed today (available on screen till that day night!)
+      this.positions = this.positions.filter(p => (p.status === "OPEN" && p.quantity !== 0) || (p.closedDate ? p.closedDate === today : true));
+    }
   }
 
   loadUserData(email) {
@@ -75,7 +96,8 @@ class TradingStore {
     this.positions = this.load(STORAGE_KEYS.POSITIONS_PREFIX + key, []);
     this.orders = this.load(STORAGE_KEYS.ORDERS_PREFIX + key, []);
     
-    // Reconcile funds immediately on load to release any stuck margins and compute realized profits
+    // Retain today's closed items until day night and clean previous days
+    this.cleanupPreviousDaysClosed();
     this.reconcileFunds();
 
     // Load watchlists and ensure valid existing symbols
@@ -245,7 +267,7 @@ class TradingStore {
 
     // Validation for SELL CNC orders: Holdings check (for Equities)
     if (side === "SELL" && product === "CNC" && !isOption) {
-      const holding = this.holdings.find(h => h.symbol === symbol);
+      const holding = this.holdings.find(h => h.symbol === symbol && h.quantity > 0);
       if (!holding || holding.quantity < quantity) {
         const available = holding ? holding.quantity : 0;
         return {
@@ -352,13 +374,18 @@ class TradingStore {
 
           if (closedQty === currentAbsQty) {
             pos.status = "CLOSED";
-            pos.realizedPL = realizedPL;
+            pos.quantity = 0;
+            pos.avgPrice = 0;
+            pos.marginBlocked = 0;
+            pos.realizedPL = +( (pos.realizedPL || 0) + realizedPL ).toFixed(2);
             pos.exitPrice = price;
             pos.exitTime = new Date().toLocaleTimeString();
+            pos.closedDate = this.getTodayDateString();
           } else {
             const remainingQty = currentAbsQty - closedQty;
             pos.quantity = posIsLong ? remainingQty : -remainingQty;
             pos.marginBlocked = Math.max(0, pos.marginBlocked - releasedMargin);
+            pos.realizedPL = +( (pos.realizedPL || 0) + realizedPL ).toFixed(2);
           }
         }
       } else {
@@ -378,7 +405,8 @@ class TradingStore {
           status: "OPEN",
           isOption: true,
           optionType: stock ? stock.optionType : null,
-          strike: stock ? stock.strike : null
+          strike: stock ? stock.strike : null,
+          createdDate: this.getTodayDateString()
         });
       }
 
@@ -392,25 +420,39 @@ class TradingStore {
         this.funds.availableCash -= marginUsed;
         this.funds.usedMargin += marginUsed;
 
-        const existing = this.holdings.find(h => h.symbol === symbol);
+        const existing = this.holdings.find(h => h.symbol === symbol && h.quantity > 0);
         if (existing) {
           const totalQty = existing.quantity + quantity;
           const totalCost = (existing.quantity * existing.avgPrice) + (quantity * price);
           existing.quantity = totalQty;
           existing.avgPrice = +(totalCost / totalQty).toFixed(2);
           existing.investedValue = +(totalQty * existing.avgPrice).toFixed(2);
+          existing.status = "OPEN";
         } else {
-          this.holdings.push({
-            symbol,
-            name: stock ? stock.name : symbol,
-            exchange: stock ? stock.exchange : "NSE",
-            quantity,
-            avgPrice: price,
-            investedValue: +(quantity * price).toFixed(2)
-          });
+          // If holding was sold earlier today, reactivate it with new purchase
+          const existingClosed = this.holdings.find(h => h.symbol === symbol && h.quantity === 0);
+          if (existingClosed) {
+            existingClosed.quantity = quantity;
+            existingClosed.avgPrice = price;
+            existingClosed.investedValue = +(quantity * price).toFixed(2);
+            existingClosed.status = "OPEN";
+            existingClosed.name = stock ? stock.name : symbol;
+            existingClosed.exchange = stock ? stock.exchange : "NSE";
+          } else {
+            this.holdings.push({
+              symbol,
+              name: stock ? stock.name : symbol,
+              exchange: stock ? stock.exchange : "NSE",
+              quantity,
+              avgPrice: price,
+              investedValue: +(quantity * price).toFixed(2),
+              status: "OPEN",
+              createdDate: this.getTodayDateString()
+            });
+          }
         }
       } else if (side === "SELL") {
-        const existingIdx = this.holdings.findIndex(h => h.symbol === symbol);
+        const existingIdx = this.holdings.findIndex(h => h.symbol === symbol && h.quantity > 0);
         if (existingIdx !== -1) {
           const h = this.holdings[existingIdx];
           const soldQty = Math.min(quantity, h.quantity);
@@ -422,8 +464,16 @@ class TradingStore {
           this.funds.realizedPnL = +( (this.funds.realizedPnL || 0) + realizedProfit ).toFixed(2);
 
           h.quantity -= soldQty;
+          h.realizedPL = +( (h.realizedPL || 0) + realizedProfit ).toFixed(2);
+          h.exitPrice = price;
+          h.exitTime = new Date().toLocaleTimeString();
+          h.closedDate = this.getTodayDateString();
+
           if (h.quantity <= 0) {
-            this.holdings.splice(existingIdx, 1);
+            h.quantity = 0;
+            h.investedValue = 0;
+            h.status = "CLOSED";
+            // Retained on screen till that day night (like Zerodha Kite)!
           } else {
             h.investedValue = +(h.quantity * h.avgPrice).toFixed(2);
           }
@@ -460,13 +510,18 @@ class TradingStore {
 
           if (closedQty === currentAbsQty) {
             pos.status = "CLOSED";
-            pos.realizedPL = realizedPL;
+            pos.quantity = 0;
+            pos.avgPrice = 0;
+            pos.marginBlocked = 0;
+            pos.realizedPL = +( (pos.realizedPL || 0) + realizedPL ).toFixed(2);
             pos.exitPrice = price;
             pos.exitTime = new Date().toLocaleTimeString();
+            pos.closedDate = this.getTodayDateString();
           } else {
             const remainingQty = currentAbsQty - closedQty;
             pos.quantity = posIsLong ? remainingQty : -remainingQty;
             pos.marginBlocked = Math.max(0, pos.marginBlocked - releasedMargin);
+            pos.realizedPL = +( (pos.realizedPL || 0) + realizedPL ).toFixed(2);
           }
         }
       } else {
@@ -501,25 +556,28 @@ class TradingStore {
       };
     }
 
-    if (typeof this.funds.realizedPnL !== "number") {
-      let closedPosTotal = 0;
-      this.positions.forEach(p => {
-        if (p.status === "CLOSED" && typeof p.realizedPL === "number") {
-          closedPosTotal += p.realizedPL;
-        }
-      });
-      this.funds.realizedPnL = +closedPosTotal.toFixed(2);
-    }
+    // Always compute realizedPnL accurately from all closed positions and closed holdings
+    let closedRealizedTotal = 0;
+    this.positions.forEach(p => {
+      if (typeof p.realizedPL === "number") closedRealizedTotal += p.realizedPL;
+    });
+    this.holdings.forEach(h => {
+      if (typeof h.realizedPL === "number") closedRealizedTotal += h.realizedPL;
+    });
+    this.funds.realizedPnL = +closedRealizedTotal.toFixed(2);
 
-    // 1. Exact margin currently needed for active CNC holdings
+    // 1. Exact margin currently needed for active CNC holdings (only quantity > 0)
     const holdingsCost = this.holdings.reduce((sum, h) => {
-      const cost = typeof h.investedValue === "number" ? h.investedValue : (h.quantity * h.avgPrice);
-      return sum + (cost || 0);
+      if (h.quantity > 0) {
+        const cost = typeof h.investedValue === "number" ? h.investedValue : (h.quantity * h.avgPrice);
+        return sum + (cost || 0);
+      }
+      return sum;
     }, 0);
 
     // 2. Exact margin currently blocked for open intraday & option positions
     const openPositionsMargin = this.positions
-      .filter(p => p.status === "OPEN")
+      .filter(p => p.status === "OPEN" && p.quantity !== 0)
       .reduce((sum, p) => sum + (p.marginBlocked || 0), 0);
 
     // 3. Exact margin blocked for open pending BUY orders
@@ -529,7 +587,7 @@ class TradingStore {
 
     const exactUsedMargin = +(holdingsCost + openPositionsMargin + pendingOrdersMargin).toFixed(2);
 
-    // If usedMargin in store was bloated or mismatched (e.g. ₹6,314.70 stuck when 0 needed):
+    // If usedMargin in store was bloated or mismatched:
     const currentUsed = +(this.funds.usedMargin || 0);
     if (Math.abs(currentUsed - exactUsedMargin) > 0.001) {
       const discrepancy = currentUsed - exactUsedMargin;
@@ -537,9 +595,10 @@ class TradingStore {
       this.funds.usedMargin = exactUsedMargin;
     }
 
-    // Baseline validation: if user has zero holdings and zero open positions, availableCash cannot be stranded lower than baseline
+    // Baseline validation: if user has zero active holdings and zero open positions, availableCash cannot be stranded lower than baseline
+    const hasActiveHoldings = this.holdings.some(h => h.quantity > 0);
     const expectedBaseCash = (this.funds.initialCapital || INITIAL_DEMO_CAPITAL) + (this.funds.realizedPnL || 0) - this.funds.usedMargin;
-    if (this.funds.availableCash < expectedBaseCash && this.holdings.length === 0 && openPositionsMargin === 0 && pendingOrdersMargin === 0) {
+    if (this.funds.availableCash < expectedBaseCash && !hasActiveHoldings && openPositionsMargin === 0 && pendingOrdersMargin === 0) {
       this.funds.availableCash = +expectedBaseCash.toFixed(2);
     }
 

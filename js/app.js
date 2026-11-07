@@ -371,10 +371,10 @@ class App {
     }
 
     const positionsBadge = document.getElementById("badgePositionsCount");
-    const openPos = store.positions.filter((p) => p.status === "OPEN").length;
+    const totalPositionsCount = store.positions.length;
     if (positionsBadge) {
-      positionsBadge.textContent = openPos || "";
-      positionsBadge.style.display = openPos ? "inline-block" : "none";
+      positionsBadge.textContent = totalPositionsCount || "";
+      positionsBadge.style.display = totalPositionsCount ? "inline-block" : "none";
     }
 
     // Mobile Bottom Navigation Badges
@@ -385,7 +385,7 @@ class App {
     }
 
     const mobPortBadge = document.getElementById("mobBadgePortfolio");
-    const portCount = store.holdings.length + openPos;
+    const portCount = store.holdings.length + totalPositionsCount;
     if (mobPortBadge) {
       mobPortBadge.textContent = portCount || "";
       mobPortBadge.style.display = portCount ? "inline-block" : "none";
@@ -399,8 +399,8 @@ class App {
 
     const mobPCount = document.getElementById("mobPositionsTabCount");
     const mobPCount2 = document.getElementById("mobPositionsTabCount2");
-    if (mobPCount) mobPCount.textContent = openPos;
-    if (mobPCount2) mobPCount2.textContent = openPos;
+    if (mobPCount) mobPCount.textContent = totalPositionsCount;
+    if (mobPCount2) mobPCount2.textContent = totalPositionsCount;
   }
 
   renderUserQuickFunds() {
@@ -1258,45 +1258,28 @@ class App {
 
     if (store.holdings.length === 0) {
       tbody.innerHTML = "";
-      const realizedGain = store.getRealizedPnL();
-      if (emptyState) {
-        emptyState.style.display = "block";
-        const desc = emptyState.querySelector(".empty-desc");
-        if (desc && realizedGain !== 0) {
-          desc.innerHTML = `All holdings closed. Realized profit: <b class="${realizedGain >= 0 ? 'text-green' : 'text-red'}">${realizedGain >= 0 ? '+' : ''}₹${realizedGain.toFixed(2)}</b> credited to your Available Demo Margin.`;
-        }
-      }
+      if (emptyState) emptyState.style.display = "block";
       if (mobCards) {
         mobCards.innerHTML = `
           <div class="mob-empty-msg">
             <div style="font-size:24px;margin-bottom:6px;">💼</div>
             <div style="font-weight:700;color:var(--text-dark);margin-bottom:4px;">No active holdings</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">${realizedGain !== 0 ? `Realized profit: <b class="${realizedGain >= 0 ? 'text-green' : 'text-red'}">${realizedGain >= 0 ? '+' : ''}₹${realizedGain.toFixed(2)}</b> (Credited to Available Margin)` : 'Use your demo capital to buy CNC equity shares from the watchlist.'}</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Use your demo capital to buy CNC equity shares from the watchlist.</div>
             <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="app.switchMobileTab('watchlist')">Browse Watchlist</button>
           </div>
         `;
       }
       if (mobPnlEl) {
-        if (realizedGain !== 0) {
-          mobPnlEl.className = `mob-pnl-val ${realizedGain >= 0 ? 'text-green' : 'text-red'}`;
-          mobPnlEl.textContent = `${realizedGain >= 0 ? '+' : ''}₹${realizedGain.toFixed(2)} (Realized)`;
-        } else {
-          mobPnlEl.className = "mob-pnl-val";
-          mobPnlEl.textContent = "₹0.00 (0.00%)";
-        }
+        mobPnlEl.className = "mob-pnl-val";
+        mobPnlEl.textContent = "₹0.00 (0.00%)";
       }
       if (mobInvestedEl) mobInvestedEl.textContent = "₹0.00";
       if (mobCurrentEl) mobCurrentEl.textContent = "₹0.00";
       if (totalInvestedEl) totalInvestedEl.textContent = "₹0.00";
       if (curValEl) curValEl.textContent = "₹0.00";
       if (totalPLEl) {
-        if (realizedGain !== 0) {
-          totalPLEl.className = `kpi-val ${realizedGain >= 0 ? 'text-green' : 'text-red'}`;
-          totalPLEl.textContent = `${realizedGain >= 0 ? '+' : ''}₹${realizedGain.toFixed(2)} (Realized)`;
-        } else {
-          totalPLEl.className = "kpi-val";
-          totalPLEl.textContent = "₹0.00 (0.00%)";
-        }
+        totalPLEl.className = "kpi-val";
+        totalPLEl.textContent = "₹0.00 (0.00%)";
       }
       if (dayPLEl) dayPLEl.textContent = "₹0.00";
       return;
@@ -1307,78 +1290,85 @@ class App {
     let totalInvested = 0;
     let totalCurrent = 0;
     let totalDayPL = 0;
+    let totalRealizedGain = 0;
     const cardsHtml = [];
 
     tbody.innerHTML = store.holdings.map((h) => {
       const stock = STOCKS_MAP.get(h.symbol);
-      const ltp = stock ? stock.price : h.avgPrice;
-      const curVal = h.quantity * ltp;
-      const pl = curVal - h.investedValue;
-      const plPct = h.investedValue > 0 ? (pl / h.investedValue) * 100 : 0;
+      const isClosed = h.quantity === 0 || h.status === "CLOSED";
+      const ltp = stock ? stock.price : (h.exitPrice || h.avgPrice);
+      const curVal = isClosed ? 0 : (h.quantity * ltp);
+      const pl = isClosed ? (h.realizedPL || 0) : (curVal - h.investedValue);
+      const plPct = (!isClosed && h.investedValue > 0) ? (pl / h.investedValue) * 100 : 0;
       const isPositive = pl >= 0;
 
-      const dayChange = stock ? stock.change * h.quantity : 0;
+      const dayChange = (!isClosed && stock) ? stock.change * h.quantity : 0;
       const dayPct = stock ? stock.pChange : 0;
 
-      totalInvested += h.investedValue;
-      totalCurrent += curVal;
-      totalDayPL += dayChange;
+      if (!isClosed) {
+        totalInvested += h.investedValue;
+        totalCurrent += curVal;
+        totalDayPL += dayChange;
+      } else {
+        totalRealizedGain += (h.realizedPL || 0);
+      }
 
       cardsHtml.push(`
-        <div class="mob-pos-card">
+        <div class="mob-pos-card ${isClosed ? 'mob-card-closed' : ''}">
           <div class="mob-pos-top">
-            <div class="mob-pos-left">
-              <span class="badge-tag tag-cnc">CNC</span>
-              <span class="mob-pos-symbol">${h.symbol}</span>
+            <div class="mob-card-qty-avg">
+              <span>Qty. <b class="${isClosed ? 'text-muted' : 'font-bold'}">${h.quantity}</b></span>
+              <span style="margin-left:8px;">Avg. <b>${isClosed ? '0.00' : h.avgPrice.toFixed(2)}</b></span>
             </div>
-            <div class="mob-pos-pnl ${isPositive ? 'text-green' : 'text-red'}">
-              ${isPositive ? '+' : ''}₹${pl.toFixed(2)} (${isPositive ? '+' : ''}${plPct.toFixed(2)}%)
+            <span class="badge-tag tag-cnc">CNC</span>
+          </div>
+          <div class="mob-pos-mid" style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+            <div class="mob-pos-symbol" style="font-size:14.5px;font-weight:700;">${h.symbol}</div>
+            <div class="mob-pos-pnl ${isPositive ? 'text-green' : 'text-red'}" style="font-size:15px;font-weight:800;">
+              ${isPositive ? '+' : ''}${pl.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
-          <div class="mob-pos-mid">
-            <div class="mob-pos-stat">
-              <span class="stat-lbl">Qty</span>
-              <span class="stat-val font-bold">${h.quantity}</span>
-            </div>
-            <div class="mob-pos-stat">
-              <span class="stat-lbl">Avg Cost</span>
-              <span class="stat-val">₹${h.avgPrice.toFixed(2)}</span>
-            </div>
-            <div class="mob-pos-stat">
-              <span class="stat-lbl">LTP</span>
-              <span class="stat-val font-bold">₹${ltp.toFixed(2)}</span>
-            </div>
-            <div class="mob-pos-stat">
-              <span class="stat-lbl">Cur. Value</span>
-              <span class="stat-val font-bold">₹${curVal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
-            </div>
+          <div class="mob-pos-bottom" style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:11.5px;color:var(--text-secondary);">
+            <span>${h.exchange || 'NSE'}</span>
+            <span>LTP <b>₹${ltp.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></span>
           </div>
-          <div class="mob-pos-actions">
-            <button class="mob-btn-exit" onclick="app.openOrderModal('${h.symbol}', 'SELL')">Exit / Sell</button>
-            <button class="mob-btn-add" onclick="app.openOrderModal('${h.symbol}', 'BUY')">+ Add More</button>
+          <div class="mob-pos-actions" style="margin-top:8px;">
+            ${!isClosed ? `
+              <button class="mob-btn-exit" onclick="app.openOrderModal('${h.symbol}', 'SELL')">Exit / Sell</button>
+              <button class="mob-btn-add" onclick="app.openOrderModal('${h.symbol}', 'BUY')">+ Add More</button>
+            ` : `
+              <button class="mob-btn-add" style="width:100%;" onclick="app.openOrderModal('${h.symbol}', 'BUY')">+ Re-buy ${h.symbol}</button>
+            `}
           </div>
         </div>
       `);
 
       return `
-        <tr>
+        <tr class="${isClosed ? 'row-closed' : ''}">
           <td>
-            <div class="font-bold text-dark">${h.symbol}</div>
+            <div class="font-bold text-dark">
+              ${h.symbol}
+              ${isClosed ? '<span class="badge-tag tag-complete" style="margin-left:6px;font-size:10px;">CLOSED</span>' : ''}
+            </div>
             <div style="font-size:11.5px;color:var(--text-secondary);">${h.name}</div>
           </td>
-          <td class="text-right font-bold">${h.quantity}</td>
-          <td class="text-right">₹${h.avgPrice.toFixed(2)}</td>
+          <td class="text-right font-bold ${isClosed ? 'text-muted' : ''}">${h.quantity}</td>
+          <td class="text-right">${isClosed ? '—' : `₹${h.avgPrice.toFixed(2)}`}</td>
           <td class="text-right font-bold">₹${ltp.toFixed(2)}</td>
           <td class="text-right font-bold">₹${curVal.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
           <td class="text-right font-bold ${isPositive ? 'text-green' : 'text-red'}">
-            ${isPositive ? '+' : ''}₹${pl.toFixed(2)} (${isPositive ? '+' : ''}${plPct.toFixed(2)}%)
+            ${isPositive ? '+' : ''}₹${pl.toFixed(2)} ${!isClosed ? `(${isPositive ? '+' : ''}${plPct.toFixed(2)}%)` : '(Realized)'}
           </td>
           <td class="text-right ${dayChange >= 0 ? 'text-green' : 'text-red'}">
-            ${dayChange >= 0 ? '+' : ''}₹${dayChange.toFixed(2)} (${dayPct.toFixed(2)}%)
+            ${isClosed ? '—' : `${dayChange >= 0 ? '+' : ''}₹${dayChange.toFixed(2)} (${dayPct.toFixed(2)}%)`}
           </td>
           <td class="text-right">
-            <button class="btn-primary" style="padding:4px 8px;font-size:11.5px;" onclick="app.openOrderModal('${h.symbol}', 'BUY')">Add</button>
-            <button class="btn-danger" style="padding:4px 8px;font-size:11.5px;margin-left:4px;" onclick="app.openOrderModal('${h.symbol}', 'SELL')">Exit</button>
+            ${!isClosed ? `
+              <button class="btn-primary" style="padding:4px 8px;font-size:11.5px;" onclick="app.openOrderModal('${h.symbol}', 'BUY')">Add</button>
+              <button class="btn-danger" style="padding:4px 8px;font-size:11.5px;margin-left:4px;" onclick="app.openOrderModal('${h.symbol}', 'SELL')">Exit</button>
+            ` : `
+              <button class="btn-primary" style="padding:4px 8px;font-size:11.5px;" onclick="app.openOrderModal('${h.symbol}', 'BUY')">+ Re-buy</button>
+            `}
           </td>
         </tr>
       `;
@@ -1386,14 +1376,14 @@ class App {
 
     if (mobCards) mobCards.innerHTML = cardsHtml.join("");
 
-    const totalPL = totalCurrent - totalInvested;
+    const totalPL = (totalCurrent - totalInvested) + totalRealizedGain;
     const totalPLPct = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
 
     if (totalInvestedEl) totalInvestedEl.textContent = `₹${totalInvested.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
     if (curValEl) curValEl.textContent = `₹${totalCurrent.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
     if (totalPLEl) {
       totalPLEl.className = `kpi-val ${totalPL >= 0 ? 'text-green' : 'text-red'}`;
-      totalPLEl.textContent = `${totalPL >= 0 ? '+' : ''}₹${totalPL.toFixed(2)} (${totalPLPct.toFixed(2)}%)`;
+      totalPLEl.textContent = `${totalPL >= 0 ? '+' : ''}₹${totalPL.toFixed(2)} ${totalInvested > 0 ? `(${totalPLPct.toFixed(2)}%)` : '(Realized)'}`;
     }
     if (dayPLEl) {
       dayPLEl.className = `kpi-val ${totalDayPL >= 0 ? 'text-green' : 'text-red'}`;
@@ -1401,7 +1391,7 @@ class App {
     }
     if (mobPnlEl) {
       mobPnlEl.className = `mob-pnl-val ${totalPL >= 0 ? 'text-green' : 'text-red'}`;
-      mobPnlEl.textContent = `${totalPL >= 0 ? '+' : ''}₹${totalPL.toFixed(2)} (${totalPLPct.toFixed(2)}%)`;
+      mobPnlEl.textContent = `${totalPL >= 0 ? '+' : ''}₹${totalPL.toFixed(2)} ${totalInvested > 0 ? `(${totalPLPct.toFixed(2)}%)` : ''}`;
     }
     if (mobInvestedEl) mobInvestedEl.textContent = `₹${totalInvested.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
     if (mobCurrentEl) mobCurrentEl.textContent = `₹${totalCurrent.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
@@ -1421,45 +1411,28 @@ class App {
 
     if (!tbody) return;
 
-    const openPositions = store.positions.filter((p) => p.status === "OPEN");
+    const todayPositions = store.positions;
 
-    if (openPositions.length === 0) {
+    if (todayPositions.length === 0) {
       tbody.innerHTML = "";
-      const realizedGain = store.getRealizedPnL();
-      if (emptyState) {
-        emptyState.style.display = "block";
-        const desc = emptyState.querySelector(".empty-desc");
-        if (desc && realizedGain !== 0) {
-          desc.innerHTML = `All positions squared off. Realized P&L: <b class="${realizedGain >= 0 ? 'text-green' : 'text-red'}">${realizedGain >= 0 ? '+' : ''}₹${realizedGain.toFixed(2)}</b> credited to your Available Demo Margin.`;
-        }
-      }
+      if (emptyState) emptyState.style.display = "block";
       if (mobCards) {
         mobCards.innerHTML = `
           <div class="mob-empty-msg">
             <div style="font-size:24px;margin-bottom:6px;">⚡</div>
             <div style="font-weight:700;color:var(--text-dark);margin-bottom:4px;">No open positions</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">${realizedGain !== 0 ? `Realized P&L: <b class="${realizedGain >= 0 ? 'text-green' : 'text-red'}">${realizedGain >= 0 ? '+' : ''}₹${realizedGain.toFixed(2)}</b> (All margin released)` : 'Trade Call & Put options or MIS intraday stocks to see live MTM P&L.'}</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Trade Call & Put options or MIS intraday stocks to see live MTM P&L.</div>
             <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="app.openOptionChainModal('NIFTY 50')">Open Option Chain</button>
           </div>
         `;
       }
       if (mtmKpi) {
-        if (realizedGain !== 0) {
-          mtmKpi.className = `kpi-val ${realizedGain >= 0 ? 'text-green' : 'text-red'}`;
-          mtmKpi.textContent = `${realizedGain >= 0 ? '+' : ''}₹${realizedGain.toFixed(2)} (Realized)`;
-        } else {
-          mtmKpi.className = "kpi-val";
-          mtmKpi.textContent = "₹0.00";
-        }
+        mtmKpi.className = "kpi-val";
+        mtmKpi.textContent = "₹0.00";
       }
       if (mobPnlEl) {
-        if (realizedGain !== 0) {
-          mobPnlEl.className = `mob-pnl-val ${realizedGain >= 0 ? 'text-green' : 'text-red'}`;
-          mobPnlEl.textContent = `${realizedGain >= 0 ? '+' : ''}₹${realizedGain.toFixed(2)} (Realized)`;
-        } else {
-          mobPnlEl.className = "mob-pnl-val";
-          mobPnlEl.textContent = "₹0.00";
-        }
+        mobPnlEl.className = "mob-pnl-val";
+        mobPnlEl.textContent = "₹0.00";
       }
       return;
     }
@@ -1467,73 +1440,93 @@ class App {
     if (emptyState) emptyState.style.display = "none";
 
     let totalMTM = 0;
+    let totalRealized = 0;
     const cardsHtml = [];
 
-    tbody.innerHTML = openPositions.map((pos) => {
+    tbody.innerHTML = todayPositions.map((pos) => {
       const stock = STOCKS_MAP.get(pos.symbol);
-      const ltp = stock ? stock.price : pos.avgPrice;
+      const isClosed = pos.status === "CLOSED" || pos.quantity === 0;
+      const ltp = stock ? stock.price : (pos.exitPrice || pos.avgPrice);
       const isLong = pos.quantity > 0;
-      const pnlPerShare = isLong ? (ltp - pos.avgPrice) : (pos.avgPrice - ltp);
-      const pnl = pnlPerShare * Math.abs(pos.quantity);
+
+      let pnl = 0;
+      if (isClosed) {
+        pnl = pos.realizedPL || 0;
+        totalRealized += pnl;
+      } else {
+        const pnlPerShare = isLong ? (ltp - pos.avgPrice) : (pos.avgPrice - ltp);
+        pnl = pnlPerShare * Math.abs(pos.quantity);
+        totalMTM += pnl;
+      }
       const isProfitable = pnl >= 0;
 
-      totalMTM += pnl;
+      let exchange = "NSE";
+      if (pos.isOption) {
+        exchange = pos.underlying === "SENSEX" ? "BFO" : "NFO";
+      } else if (stock && stock.exchange) {
+        exchange = stock.exchange;
+      }
+
+      const productTag = pos.isOption ? (pos.optionType === "CE" ? "badge-ce" : "badge-pe") : "tag-mis";
 
       cardsHtml.push(`
-        <div class="mob-pos-card">
+        <div class="mob-pos-card ${isClosed ? 'mob-card-closed' : ''}">
           <div class="mob-pos-top">
-            <div class="mob-pos-left">
-              <span class="badge-tag ${pos.isOption ? (pos.optionType === 'CE' ? 'badge-ce' : 'badge-pe') : 'tag-mis'}">
-                ${pos.isOption ? `${pos.optionType} (${pos.product})` : 'MIS 5x'}
-              </span>
-              <span class="mob-pos-symbol">${pos.symbol}</span>
+            <div class="mob-card-qty-avg">
+              <span>Qty. <b class="${isClosed ? 'text-muted' : (isLong ? 'text-blue' : 'text-red')}">${isClosed ? '0' : pos.quantity}</b></span>
+              <span style="margin-left:8px;">Avg. <b>${isClosed ? '0.00' : pos.avgPrice.toFixed(2)}</b></span>
             </div>
-            <div class="mob-pos-pnl ${isProfitable ? 'text-green' : 'text-red'}">
-              ${isProfitable ? '+' : ''}₹${pnl.toFixed(2)}
+            <span class="badge-tag ${productTag}">${pos.product || 'NRML'}</span>
+          </div>
+          <div class="mob-pos-mid" style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+            <div class="mob-pos-symbol" style="font-size:14.5px;font-weight:700;">${pos.symbol}</div>
+            <div class="mob-pos-pnl ${isProfitable ? 'text-green' : 'text-red'}" style="font-size:15px;font-weight:800;">
+              ${isProfitable ? '+' : ''}${pnl.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
           </div>
-          <div class="mob-pos-mid">
-            <div class="mob-pos-stat">
-              <span class="stat-lbl">Qty</span>
-              <span class="stat-val ${isLong ? 'text-blue' : 'text-red'}">${pos.quantity > 0 ? '+' : ''}${pos.quantity}</span>
-            </div>
-            <div class="mob-pos-stat">
-              <span class="stat-lbl">Avg Price</span>
-              <span class="stat-val">₹${pos.avgPrice.toFixed(2)}</span>
-            </div>
-            <div class="mob-pos-stat">
-              <span class="stat-lbl">LTP</span>
-              <span class="stat-val font-bold">₹${ltp.toFixed(2)}</span>
-            </div>
+          <div class="mob-pos-bottom" style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:11.5px;color:var(--text-secondary);">
+            <span>${exchange}</span>
+            <span>LTP <b>₹${ltp.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></span>
           </div>
-          <div class="mob-pos-actions">
-            <button class="mob-btn-exit" onclick="app.exitPosition('${pos.id}')">Exit Position</button>
-            <button class="mob-btn-add" onclick="app.openOrderModal('${pos.symbol}', 'BUY')">+ Add More</button>
+          <div class="mob-pos-actions" style="margin-top:8px;">
+            ${!isClosed ? `
+              <button class="mob-btn-exit" onclick="app.exitPosition('${pos.id}')">Exit Position</button>
+              <button class="mob-btn-add" onclick="app.openOrderModal('${pos.symbol}', 'BUY')">+ Add More</button>
+            ` : `
+              <button class="mob-btn-add" style="width:100%;" onclick="app.openOrderModal('${pos.symbol}', 'BUY')">+ Trade ${pos.symbol} Again</button>
+            `}
           </div>
         </div>
       `);
 
       return `
-        <tr>
+        <tr class="${isClosed ? 'row-closed' : ''}">
           <td>
             <span class="badge-tag ${pos.isOption ? (pos.optionType === 'CE' ? 'badge-ce' : 'badge-pe') : 'tag-mis'}">
               ${pos.isOption ? `${pos.optionType} (${pos.product})` : 'MIS 5x'}
             </span>
           </td>
           <td>
-            <div class="font-bold text-dark">${pos.symbol}</div>
+            <div class="font-bold text-dark">
+              ${pos.symbol}
+              ${isClosed ? '<span class="badge-tag tag-complete" style="margin-left:6px;font-size:10px;">CLOSED</span>' : ''}
+            </div>
             <div style="font-size:11.5px;color:var(--text-secondary);">${pos.name}</div>
           </td>
-          <td class="text-right font-bold ${isLong ? 'text-blue' : 'text-red'}">
-            ${pos.quantity > 0 ? '+' : ''}${pos.quantity}
+          <td class="text-right font-bold ${isClosed ? 'text-muted' : (isLong ? 'text-blue' : 'text-red')}">
+            ${isClosed ? '0' : pos.quantity}
           </td>
-          <td class="text-right">₹${pos.avgPrice.toFixed(2)}</td>
+          <td class="text-right">${isClosed ? '—' : `₹${pos.avgPrice.toFixed(2)}`}</td>
           <td class="text-right font-bold">₹${ltp.toFixed(2)}</td>
           <td class="text-right font-bold ${isProfitable ? 'text-green' : 'text-red'}">
-            ${isProfitable ? '+' : ''}₹${pnl.toFixed(2)}
+            ${isProfitable ? '+' : ''}₹${pnl.toFixed(2)} ${isClosed ? '(Realized)' : ''}
           </td>
           <td class="text-right">
-            <button class="btn-danger" style="padding:4px 10px;font-size:11.5px;" onclick="app.exitPosition('${pos.id}')">Exit</button>
+            ${!isClosed ? `
+              <button class="btn-danger" style="padding:4px 10px;font-size:11.5px;" onclick="app.exitPosition('${pos.id}')">Exit</button>
+            ` : `
+              <button class="btn-primary" style="padding:4px 8px;font-size:11.5px;" onclick="app.openOrderModal('${pos.symbol}', 'BUY')">Trade Again</button>
+            `}
           </td>
         </tr>
       `;
@@ -1541,13 +1534,15 @@ class App {
 
     if (mobCards) mobCards.innerHTML = cardsHtml.join("");
 
+    const totalNetPositionsPL = totalMTM + totalRealized;
+
     if (mtmKpi) {
-      mtmKpi.className = `kpi-val ${totalMTM >= 0 ? 'text-green' : 'text-red'}`;
-      mtmKpi.textContent = `${totalMTM >= 0 ? '+' : ''}₹${totalMTM.toFixed(2)}`;
+      mtmKpi.className = `kpi-val ${totalNetPositionsPL >= 0 ? 'text-green' : 'text-red'}`;
+      mtmKpi.textContent = `${totalNetPositionsPL >= 0 ? '+' : ''}₹${totalNetPositionsPL.toFixed(2)}`;
     }
     if (mobPnlEl) {
-      mobPnlEl.className = `mob-pnl-val ${totalMTM >= 0 ? 'text-green' : 'text-red'}`;
-      mobPnlEl.textContent = `${totalMTM >= 0 ? '+' : ''}₹${totalMTM.toFixed(2)}`;
+      mobPnlEl.className = `mob-pnl-val ${totalNetPositionsPL >= 0 ? 'text-green' : 'text-red'}`;
+      mobPnlEl.textContent = `${totalNetPositionsPL >= 0 ? '+' : ''}₹${totalNetPositionsPL.toFixed(2)}`;
     }
   }
 

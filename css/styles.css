@@ -2918,6 +2918,35 @@ body {
     font-family: var(--font-number);
   }
 
+  .mob-card-qty-avg {
+    font-size: 11.5px;
+    color: var(--text-secondary);
+  }
+
+  .mob-card-qty-avg b {
+    color: var(--text-dark) !important;
+  }
+
+  .mob-card-closed {
+    border-left: 3px solid #10b981 !important;
+  }
+
+  .port-tab-badge {
+    display: inline-block;
+    background: rgba(37, 99, 235, 0.12);
+    color: var(--tp-blue);
+    font-size: 11px;
+    font-weight: 800;
+    padding: 1px 6px;
+    border-radius: 10px;
+    margin-left: 4px;
+  }
+
+  .row-closed {
+    opacity: 0.9;
+    background: rgba(16, 185, 129, 0.03);
+  }
+
   .mob-pos-mid {
     display: grid !important;
     grid-template-columns: repeat(4, 1fr) !important;
