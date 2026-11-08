@@ -1406,6 +1406,19 @@ class App {
         pnlCardVal.className = "kite-pnl-card-val";
         pnlCardVal.textContent = "+0.00";
       }
+      if (cardInvested) cardInvested.textContent = "0.00";
+      if (cardCurrent) cardCurrent.textContent = "0.00";
+      const cardPctEl = document.getElementById("holdingsPnlCardPct");
+      if (cardPctEl) cardPctEl.textContent = "";
+      const dayPnlValEl = document.getElementById("holdingsDayPnlVal");
+      if (dayPnlValEl) {
+        dayPnlValEl.className = "kite-sd-val text-green";
+        dayPnlValEl.textContent = "+0.00 (+0.00%)";
+      }
+      const bH1 = document.getElementById("portHoldingsTabBadge");
+      const bH2 = document.getElementById("portHoldingsTabBadge2");
+      if (bH1) bH1.style.display = "none";
+      if (bH2) bH2.style.display = "none";
       if (pnlCardSub) pnlCardSub.style.display = "none";
       if (totalInvestedEl) totalInvestedEl.textContent = "₹0.00";
       if (curValEl) curValEl.textContent = "₹0.00";
@@ -1565,6 +1578,10 @@ class App {
         pnlCardVal.className = "kite-pnl-card-val";
         pnlCardVal.textContent = "+0.00";
       }
+      const bP1 = document.getElementById("portPositionsTabBadge");
+      const bP2 = document.getElementById("portPositionsTabBadge2");
+      if (bP1) bP1.style.display = "none";
+      if (bP2) bP2.style.display = "none";
       if (mtmKpi) {
         mtmKpi.className = "kpi-val";
         mtmKpi.textContent = "₹0.00";
@@ -2240,8 +2257,11 @@ class App {
     const drawer = document.getElementById("kiteMobIndicesDrawer");
     if (drawer) drawer.style.display = "none";
 
-    // Update Header title
+    // Update Header title & icons (Zerodha Kite Header convention)
     const titleEl = document.getElementById("mobHeaderTitle");
+    const cartBtn = document.getElementById("mobCartBtn");
+    const chevronBtn = document.getElementById("mobChevronBtn");
+
     if (titleEl) {
       const titles = {
         watchlist: "Watchlist",
@@ -2252,6 +2272,13 @@ class App {
         funds: "Funds"
       };
       titleEl.textContent = titles[tab] || "Trade Pulse";
+    }
+
+    if (cartBtn) {
+      cartBtn.style.display = (tab === "watchlist" || tab === "orders") ? "flex" : "none";
+    }
+    if (chevronBtn) {
+      chevronBtn.style.display = (tab !== "account") ? "flex" : "none";
     }
 
     if (tab === "watchlist") {

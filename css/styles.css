@@ -2962,7 +2962,12 @@ body.dark-mode .sheet-btn-depth {
     height: 100% !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
-    padding: 10px 12px calc(85px + env(safe-area-inset-bottom, 0px)) 12px !important;
+    padding: 0 0 calc(75px + env(safe-area-inset-bottom, 0px)) 0 !important;
+    background: #f0f3f7 !important;
+  }
+
+  body.dark-mode:not([data-mobile-tab="watchlist"]) .workspace-pane {
+    background: #111827 !important;
   }
 
   /* 3. Watchlist Pane on Mobile */
@@ -4672,5 +4677,37 @@ body.dark-mode .kite-acc-menu-item:active {
   .app-container {
     height: calc(100vh - 54px - 58px) !important;
     height: calc(100dvh - 54px - 58px) !important;
+  }
+
+  /* Completely eliminate duplicate/overlapping Portfolio header on mobile */
+  .kite-port-title-row {
+    display: none !important;
+  }
+
+  /* Subtabs bar sits flush directly below the top mobile header */
+  .kite-port-header {
+    padding: 0 16px !important;
+    background: transparent !important;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+  }
+
+  .kite-portfolio-container,
+  .kite-orders-container,
+  .kite-bids-container,
+  .kite-account-container {
+    background: transparent !important;
+    max-width: 100% !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .kite-holdings-pnl-card,
+  .kite-total-pnl-card {
+    margin: 12px 14px 10px 14px !important;
+  }
+
+  .kite-filter-toolbar {
+    margin: 0 14px !important;
+    padding: 8px 0 !important;
   }
 }

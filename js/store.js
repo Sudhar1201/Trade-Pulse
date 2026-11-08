@@ -22,7 +22,7 @@ class TradingStore {
 
   init() {
     // Migration: ensure holdings and positions start 100% clean and empty as requested
-    const CLEANUP_KEY = "tp_empty_portfolio_v3";
+    const CLEANUP_KEY = "tp_empty_portfolio_v6";
     try {
       if (!localStorage.getItem(CLEANUP_KEY)) {
         Object.keys(localStorage).forEach(k => {
@@ -130,9 +130,14 @@ class TradingStore {
       }
 
       // 2. Clear closed holdings from past dates (next day starts blank of closed items!)
-      // Keep only active holdings held for > 1 day
+      // Keep only active holdings held for > 1 day, purging any dummy legacy seeds
       if (Array.isArray(this.holdings)) {
-        this.holdings = this.holdings.filter(h => h.quantity > 0 && h.status === "OPEN");
+        this.holdings = this.holdings.filter(h => {
+          if (h.symbol === "OBEROIRLTY" || h.symbol === "DLF" || h.symbol === "KALYANKJIL" || h.symbol === "INDIACEM" || h.symbol === "HBLENGINE") {
+            if (h.createdDate === "2026-11-05" || h.createdDate === "2026-11-06" || !h.orderId) return false;
+          }
+          return h.quantity > 0 && h.status === "OPEN" && (h.holdingDays || 0) >= 1;
+        });
       }
 
       // 3. Clear positions for the new day's fresh intraday trading
@@ -151,12 +156,21 @@ class TradingStore {
     this.save(STORAGE_KEYS.SESSION_DATE_PREFIX + key, today);
 
     // Within the same day:
-    // Move any CNC stocks created today out of holdings into positions (Day T belongs in Positions!)
+    // Move any CNC stocks created today out of holdings into positions (Day T belongs strictly in Positions!)
     if (Array.isArray(this.holdings)) {
       const createdToday = [];
       this.holdings = this.holdings.filter(h => {
-        if (h.createdDate === today && h.status === "OPEN" && (!h.holdingDays || h.holdingDays === 0)) {
-          createdToday.push(h);
+        // Unconditional purge of any legacy demo seeds
+        if (h.symbol === "OBEROIRLTY" || h.symbol === "DLF" || h.symbol === "KALYANKJIL" || h.symbol === "INDIACEM" || h.symbol === "HBLENGINE") {
+          if (h.createdDate === "2026-11-05" || h.createdDate === "2026-11-06" || !h.orderId) {
+            return false;
+          }
+        }
+        // If stock was bought today or holdingDays < 1, it belongs strictly in POSITIONS
+        if (h.createdDate === today || !h.holdingDays || h.holdingDays < 1) {
+          if (h.status === "OPEN" && h.quantity > 0) {
+            createdToday.push(h);
+          }
           return false;
         }
         // Remove closed holdings from older dates (only keep today's closed holdings till night)
@@ -278,7 +292,12 @@ class TradingStore {
 
     // Ensure clean empty portfolio as requested: holdings and positions start 100% empty
     if (Array.isArray(this.holdings)) {
-      this.holdings = this.holdings.filter(h => !(h.createdDate === "2026-11-06" && (h.symbol === "DLF" || h.symbol === "OBEROIRLTY" || h.symbol === "KALYANKJIL" || h.symbol === "INDIACEM" || h.symbol === "HBLENGINE")));
+      this.holdings = this.holdings.filter(h => {
+        if (h.symbol === "OBEROIRLTY" || h.symbol === "DLF" || h.symbol === "KALYANKJIL" || h.symbol === "INDIACEM" || h.symbol === "HBLENGINE") {
+          if (h.createdDate === "2026-11-05" || h.createdDate === "2026-11-06" || !h.orderId) return false;
+        }
+        return h.quantity > 0 && (h.holdingDays || 0) >= 1 && h.createdDate !== this.getTodayDateString();
+      });
     }
     if (Array.isArray(this.positions)) {
       this.positions = this.positions.filter(p => !(p.id && p.id.startsWith("pos_demo_")));
