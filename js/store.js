@@ -41,20 +41,19 @@ class TradingStore {
       this.save(STORAGE_KEYS.USERS_DB, this.usersDb);
     }
 
-    if (this.currentUser) {
-      this.loadUserData(this.currentUser.email);
-    } else {
-      this.funds = {
-        availableCash: INITIAL_DEMO_CAPITAL,
-        usedMargin: 0.00,
-        totalBalance: INITIAL_DEMO_CAPITAL,
-        initialCapital: INITIAL_DEMO_CAPITAL
+    if (!this.currentUser) {
+      this.currentUser = this.usersDb[0] || {
+        id: "usr_default",
+        name: "Demo Learner",
+        email: "demo@tradepulse.app",
+        password: "password123",
+        clientId: "TP7842",
+        createdAt: new Date().toISOString()
       };
-      this.holdings = [];
-      this.positions = [];
-      this.orders = [];
-      this.watchlists = DEFAULT_WATCHLISTS;
+      this.save(STORAGE_KEYS.CURRENT_USER, this.currentUser);
     }
+
+    this.loadUserData(this.currentUser.email);
 
     this.activeWatchlist = 1;
 
@@ -262,6 +261,59 @@ class TradingStore {
     this.holdings = this.load(STORAGE_KEYS.HOLDINGS_PREFIX + key, []);
     this.positions = this.load(STORAGE_KEYS.POSITIONS_PREFIX + key, []);
     this.orders = this.load(STORAGE_KEYS.ORDERS_PREFIX + key, []);
+
+    // Seed authentic demo holdings & positions matching Zerodha Kite video recording if empty
+    if ((!this.holdings || this.holdings.length === 0) && (!this.positions || this.positions.length === 0)) {
+      this.holdings = [
+        { symbol: "DLF", name: "DLF Limited", exchange: "NSE", quantity: 6, avgPrice: 820.00, investedValue: 4920.00, status: "OPEN", holdingDays: 2, createdDate: "2026-11-06" },
+        { symbol: "OBEROIRLTY", name: "Oberoi Realty Ltd.", exchange: "NSE", quantity: 2, avgPrice: 1980.00, investedValue: 3960.00, status: "OPEN", holdingDays: 3, createdDate: "2026-11-05" },
+        { symbol: "KALYANKJIL", name: "Kalyan Jewellers India", exchange: "NSE", quantity: 10, avgPrice: 690.00, investedValue: 6900.00, status: "OPEN", holdingDays: 2, createdDate: "2026-11-06" },
+        { symbol: "INDIACEM", name: "The India Cements Ltd", exchange: "NSE", quantity: 15, avgPrice: 360.00, investedValue: 5400.00, status: "OPEN", holdingDays: 2, createdDate: "2026-11-06" },
+        { symbol: "HBLENGINE", name: "HBL Engineering Ltd", exchange: "NSE", quantity: 20, avgPrice: 580.00, investedValue: 11600.00, status: "OPEN", holdingDays: 2, createdDate: "2026-11-06" }
+      ];
+
+      this.positions = [
+        {
+          id: "pos_demo_1",
+          symbol: "SENSEX 12th NOV 78300 PE",
+          name: "SENSEX 12th NOV 78300 PE",
+          isOption: true,
+          underlying: "SENSEX",
+          optionType: "PE",
+          strike: 78300,
+          expiryDate: "12th NOV",
+          quantity: 0,
+          avgPrice: 0.00,
+          exitPrice: 114.20,
+          realizedPL: -1191.00,
+          status: "CLOSED",
+          product: "NRML",
+          exchange: "BFO",
+          createdDate: this.getTodayDateString(),
+          closedDate: this.getTodayDateString()
+        },
+        {
+          id: "pos_demo_2",
+          symbol: "SENSEX 12th NOV 80700 CE",
+          name: "SENSEX 12th NOV 80700 CE",
+          isOption: true,
+          underlying: "SENSEX",
+          optionType: "CE",
+          strike: 80700,
+          expiryDate: "12th NOV",
+          quantity: 0,
+          avgPrice: 0.00,
+          exitPrice: 934.90,
+          realizedPL: 4602.00,
+          status: "CLOSED",
+          product: "NRML",
+          exchange: "BFO",
+          createdDate: this.getTodayDateString(),
+          closedDate: this.getTodayDateString()
+        }
+      ];
+      this.saveUserData();
+    }
     
     // Retain today's holdings & positions until night, start blank on next day
     this.cleanupDailySession();

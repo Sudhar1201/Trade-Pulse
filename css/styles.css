@@ -3728,3 +3728,900 @@ body.dark-mode .sheet-btn-depth {
   }
 }
 
+
+
+/* ==========================================================================
+   AUTHENTIC ZERODHA KITE MOBILE EXPERIENCE (1:1 Match to Recording)
+   ========================================================================== */
+
+/* Kite Mobile Header (Hidden on Desktop, Visible on Mobile) */
+.kite-mobile-header {
+  display: none;
+  height: 54px;
+  background: var(--bg-primary, #ffffff);
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  padding: 0 16px;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 800;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.mob-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mob-header-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary, #1e293b);
+  letter-spacing: -0.3px;
+  margin: 0;
+}
+
+.mob-header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.mob-header-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #64748b);
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.mob-header-btn:active {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--tp-blue, #387ed1);
+}
+
+/* Mobile Live Indices Drawer (Drops down from header chevron) */
+.kite-mob-indices-drawer {
+  background: var(--card-bg, #ffffff);
+  border-bottom: 1.5px solid var(--border-color, #e2e8f0);
+  padding: 14px 16px 16px 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  position: absolute;
+  top: 54px;
+  left: 0;
+  right: 0;
+  z-index: 799;
+  animation: slideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.mob-indices-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.mob-indices-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.mob-indices-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.mob-index-card {
+  background: var(--bg-secondary, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mob-index-card:active {
+  border-color: #387ed1;
+  background: rgba(56, 126, 209, 0.05);
+}
+
+.mob-idx-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary, #1e293b);
+  margin-bottom: 4px;
+}
+
+.mob-idx-price {
+  font-size: 16px;
+  font-weight: 700;
+  font-family: var(--font-number);
+}
+
+.mob-idx-change {
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.mob-indices-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-color, #e2e8f0);
+  font-size: 11px;
+  color: var(--text-muted, #94a3b8);
+}
+
+/* Watchlist Subtabs (Scrollable 1 to 7) */
+.kite-wl-subtabs-bar {
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  background: var(--bg-primary, #ffffff);
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  gap: 18px;
+}
+
+.kite-wl-subtabs-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.kite-wl-subtabs-bar .kite-subtab-btn {
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 4px;
+  color: var(--text-secondary, #64748b);
+  flex-shrink: 0;
+}
+
+.kite-wl-subtabs-bar .kite-subtab-btn.active {
+  color: #387ed1 !important;
+  font-weight: 700;
+}
+
+/* Floating Search & Add Bar (Frames 1-6) */
+.kite-wl-search-wrap {
+  padding: 10px 14px;
+  background: var(--bg-secondary, #f8fafc);
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  position: relative;
+}
+
+.kite-wl-search-box {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 10px;
+}
+
+.kite-search-ico {
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.kite-wl-search-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  font-size: 13.5px;
+  color: var(--text-primary, #1e293b);
+  font-family: inherit;
+}
+
+.kite-wl-search-input::placeholder {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.kite-wl-search-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.kite-wl-count-label {
+  font-size: 11.5px;
+  color: #94a3b8;
+  font-weight: 600;
+  font-family: var(--font-number);
+}
+
+.kite-wl-pipe {
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+.kite-wl-filter-btn {
+  background: none;
+  border: none;
+  color: #387ed1;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Watchlist Item Row (Exact match to Frames 1-6) */
+.kite-stock-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 13px 16px;
+  background: var(--card-bg, #ffffff);
+  border-bottom: 1px solid var(--border-color, #f1f5f9);
+  cursor: pointer;
+  transition: background 0.12s ease;
+  user-select: none;
+}
+
+.kite-stock-item:active {
+  background: #f8fafc;
+}
+
+.kite-stock-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.kite-stock-sym-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kite-stock-sym {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-primary, #1e293b);
+  letter-spacing: -0.1px;
+}
+
+.kite-stock-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kite-stock-exchange {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+/* Demat Holding Briefcase Badge (💼 6) */
+.kite-holding-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(56, 126, 209, 0.1);
+  color: #387ed1;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.kite-holding-badge-icon {
+  font-size: 10px;
+}
+
+.kite-stock-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.kite-stock-ltp {
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font-number);
+}
+
+.kite-stock-chg {
+  font-size: 11px;
+  font-weight: 500;
+  font-family: var(--font-number);
+}
+
+/* Kite Orders View & Subtabs (Frames 7-10) */
+.kite-orders-container {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.kite-orders-subtabs {
+  background: var(--bg-primary, #ffffff);
+  padding: 0 16px;
+}
+
+.kite-ft-icon-btn, .kite-ft-text-btn, .kite-ft-sort-btn {
+  color: #387ed1 !important;
+}
+
+.kite-blue-ring-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 2px solid #387ed1;
+  display: inline-block;
+}
+
+/* Kite Document Illustration Empty State (Frames 7, 10, 15) */
+.kite-orders-empty {
+  text-align: center;
+  padding: 50px 20px 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.kite-doc-illustration {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.kite-empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #1e293b);
+  margin-bottom: 6px;
+}
+
+.kite-empty-desc {
+  font-size: 13px;
+  color: #8892a0;
+  max-width: 280px;
+  line-height: 1.4;
+}
+
+/* Kite Holdings 2-Column Total Card (Frames 11 & 13) */
+.kite-holdings-pnl-card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 16px 20px;
+  margin: 14px 16px 12px 16px;
+}
+
+.kite-hcard-row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.kite-hcard-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.kite-hcard-lbl {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #8892a0;
+}
+
+.kite-hcard-num {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text-primary, #1e293b);
+  font-family: var(--font-number);
+}
+
+.kite-hcard-divider {
+  height: 1px;
+  background: #f1f5f9;
+  margin: 12px 0 10px 0;
+}
+
+.kite-hcard-row-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kite-hcard-pnl-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kite-hcard-pnl-val {
+  font-size: 19px;
+  font-weight: 700;
+  font-family: var(--font-number);
+}
+
+.kite-hcard-pnl-pct {
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: var(--font-number);
+}
+
+/* Pill Select (Equity ⌵) */
+.kite-pill-select {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #387ed1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Sticky Bottom Day\'s P&L Bar (Frames 11 & 13) */
+.kite-sticky-day-pnl {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 13px 20px;
+  background: var(--bg-primary, #ffffff);
+  border-top: 1px solid var(--border-color, #e2e8f0);
+  position: sticky;
+  bottom: 58px;
+  left: 0;
+  right: 0;
+  z-index: 600;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.kite-sd-label {
+  color: #8892a0;
+}
+
+.kite-sd-val {
+  font-weight: 700;
+  font-family: var(--font-number);
+}
+
+/* Account Screen Styles (Frames 18 & 19) */
+.kite-account-container {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 14px 16px 20px 16px;
+}
+
+.kite-account-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.kite-acc-user-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary, #1e293b);
+  letter-spacing: -0.3px;
+}
+
+.kite-acc-bell-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #64748b);
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kite-account-card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 18px 20px;
+  margin-bottom: 22px;
+}
+
+.kite-acc-card-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.kite-acc-client-id {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary, #1e293b);
+  letter-spacing: -0.2px;
+  margin-bottom: 2px;
+}
+
+.kite-acc-email {
+  font-size: 12.5px;
+  color: #8892a0;
+}
+
+.kite-acc-avatar-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #eef2ff;
+  color: #387ed1;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid rgba(56, 126, 209, 0.2);
+}
+
+.kite-acc-privacy-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 14px;
+}
+
+.kite-privacy-lbl {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #1e293b);
+}
+
+/* Switch toggle */
+.kite-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.kite-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.kite-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #cbd5e1;
+  transition: .25s;
+  border-radius: 24px;
+}
+
+.kite-slider:before {
+  position: absolute;
+  content: '';
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .25s;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.kite-switch input:checked + .kite-slider {
+  background-color: #387ed1;
+}
+
+.kite-switch input:checked + .kite-slider:before {
+  transform: translateX(20px);
+}
+
+/* Account Menu */
+.kite-acc-menu-header {
+  font-size: 14px;
+  font-weight: 700;
+  color: #8892a0;
+  margin-bottom: 10px;
+  padding-left: 4px;
+}
+
+.kite-acc-menu-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 14px;
+  background: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: background 0.12s ease;
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
+
+.kite-acc-menu-item:active {
+  background: #f8fafc;
+}
+
+.kite-menu-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.kite-menu-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-primary, #1e293b);
+}
+
+.kite-menu-right {
+  display: flex;
+  align-items: center;
+}
+
+.kite-menu-icon-symbol {
+  font-size: 18px;
+  font-weight: 700;
+  color: #8892a0;
+}
+
+/* Funds Screen Styles (Frames 20 & 21) */
+.kite-funds-container {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 16px 30px 16px;
+}
+
+.kite-funds-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 0 16px 0;
+}
+
+.kite-funds-back-btn {
+  background: none;
+  border: none;
+  color: #387ed1;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kite-funds-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary, #1e293b);
+  margin: 0;
+}
+
+.kite-funds-card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.kite-funds-card-lbl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #8892a0;
+  margin-bottom: 8px;
+}
+
+.kite-funds-card-val {
+  font-size: 30px;
+  font-weight: 800;
+  color: #387ed1;
+  font-family: var(--font-number);
+  letter-spacing: -0.5px;
+  margin-bottom: 12px;
+}
+
+.kite-funds-view-statement {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #387ed1;
+  cursor: pointer;
+}
+
+.kite-funds-actions-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.kite-btn-add-funds {
+  flex: 1;
+  height: 44px;
+  background: #10b981;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25);
+  transition: all 0.15s ease;
+}
+
+.kite-btn-add-funds:active {
+  background: #059669;
+  transform: translateY(1px);
+}
+
+.kite-btn-withdraw {
+  flex: 1;
+  height: 44px;
+  background: #387ed1;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(56, 126, 209, 0.25);
+  transition: all 0.15s ease;
+}
+
+.kite-btn-withdraw:active {
+  background: #2563eb;
+  transform: translateY(1px);
+}
+
+.kite-funds-summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #edf0f5;
+  margin-bottom: 14px;
+}
+
+.kite-fsum-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.kite-fsum-lbl {
+  font-size: 12px;
+  color: #8892a0;
+  font-weight: 500;
+}
+
+.kite-fsum-val {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary, #1e293b);
+  font-family: var(--font-number);
+}
+
+.kite-funds-table {
+  background: #ffffff;
+  border-radius: 10px;
+  border: 1px solid #edf0f5;
+  padding: 6px 16px;
+}
+
+.kite-ftable-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 0;
+  border-bottom: 1px solid #f8fafc;
+}
+
+.kite-ftable-row:last-child {
+  border-bottom: none;
+}
+
+.kite-ftable-lbl {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.kite-ftable-val {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary, #1e293b);
+  font-family: var(--font-number);
+}
+
+.kite-ftable-divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 4px 0;
+}
+
+/* Dark Mode Overrides for Authentic Kite Components */
+body.dark-mode .kite-mobile-header,
+body.dark-mode .kite-mob-indices-drawer,
+body.dark-mode .kite-wl-subtabs-bar,
+body.dark-mode .kite-wl-search-box,
+body.dark-mode .kite-stock-item,
+body.dark-mode .kite-holdings-pnl-card,
+body.dark-mode .kite-sticky-day-pnl,
+body.dark-mode .kite-account-card,
+body.dark-mode .kite-acc-menu-item,
+body.dark-mode .kite-funds-card,
+body.dark-mode .kite-funds-summary-row,
+body.dark-mode .kite-funds-table {
+  background: #182230 !important;
+  border-color: #2b394a !important;
+  color: #f1f5f9 !important;
+}
+
+body.dark-mode .kite-acc-avatar-circle {
+  background: #1e293b !important;
+  color: #60a5fa !important;
+}
+
+body.dark-mode .kite-stock-item:active,
+body.dark-mode .kite-acc-menu-item:active {
+  background: #232f42 !important;
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    display: none !important;
+  }
+  .kite-mobile-header {
+    display: flex !important;
+  }
+  .app-container {
+    height: calc(100vh - 54px - 58px) !important;
+    height: calc(100dvh - 54px - 58px) !important;
+  }
+}

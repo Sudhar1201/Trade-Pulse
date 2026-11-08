@@ -94,7 +94,7 @@ window.showToast = function (message, type = "info") {
 class App {
   constructor() {
     this.currentView = "orders";
-    this.selectedStock = STOCKS_MAP.get("LT") || Array.from(STOCKS_MAP.values())[0];
+    this.selectedStock = STOCKS_MAP.get("DLF") || STOCKS_MAP.get("LT") || Array.from(STOCKS_MAP.values())[0];
     this.activeOrderSide = "BUY";
     this.activeProduct = "CNC";
     this.activeOrderType = "MARKET";
@@ -102,6 +102,10 @@ class App {
     this.activeDepthStock = null;
     this.activeAuthTab = "signup";
     this.activeOCOptionUnderlying = "NIFTY 50";
+    this.activeMobileTab = "watchlist";
+    this.activeOrderSubtab = "open";
+    this.activeBidsSubtab = "ipo";
+    this.privacyMode = false;
 
     this.init();
   }
@@ -119,6 +123,7 @@ class App {
     this.setupMobile();
     this.renderHeaderIndices();
     this.renderUserQuickFunds();
+    this.renderAccount();
     this.renderActiveView();
 
     engine.onStatusChange((status) => this.handleMarketStatusChange(status));
@@ -326,12 +331,18 @@ class App {
     } else if (viewName === "holdings" || viewName === "positions") {
       this.activeMobileTab = "portfolio";
       this.updateMobileTabState("portfolio");
+    } else if (viewName === "bids") {
+      this.activeMobileTab = "bids";
+      this.updateMobileTabState("bids");
+    } else if (viewName === "account") {
+      this.activeMobileTab = "account";
+      this.updateMobileTabState("account");
     } else if (viewName === "funds") {
       this.activeMobileTab = "funds";
       this.updateMobileTabState("funds");
     }
 
-    // Always ensure both mobile card views are rendered when in portfolio
+    // Always ensure both portfolio views are rendered when in portfolio
     if (viewName === "holdings" || viewName === "positions") {
       this.renderHoldings();
       this.renderPositions();
@@ -358,6 +369,12 @@ class App {
         break;
       case "positions":
         this.renderPositions();
+        break;
+      case "bids":
+        this.renderBids();
+        break;
+      case "account":
+        this.renderAccount();
         break;
       case "funds":
         this.renderFunds();
@@ -501,12 +518,12 @@ class App {
 
   // --- Watchlist Rendering & Actions ---
   setupWatchlist() {
-    const tabs = document.querySelectorAll(".wl-tab");
+    const tabs = document.querySelectorAll(".kite-wl-subtabs-bar .kite-subtab-btn, .wl-tab");
     tabs.forEach((tab) => {
       tab.addEventListener("click", () => {
         tabs.forEach((t) => t.classList.remove("active"));
         tab.classList.add("active");
-        store.activeWatchlist = parseInt(tab.getAttribute("data-wl"), 10);
+        store.activeWatchlist = parseInt(tab.getAttribute("data-wl"), 10) || 1;
         this.renderWatchlist();
       });
     });
@@ -587,12 +604,17 @@ class App {
     if (!container) return;
 
     const symbols = store.watchlists[store.activeWatchlist] || [];
-    if (countBadge) countBadge.textContent = `${symbols.length} / 50`;
+    if (countBadge) countBadge.textContent = `${symbols.length}/100`;
+
+    // Highlight active subtab
+    document.querySelectorAll(".kite-wl-subtabs-bar .kite-subtab-btn").forEach(btn => {
+      btn.classList.toggle("active", parseInt(btn.getAttribute("data-wl"), 10) === store.activeWatchlist);
+    });
 
     if (symbols.length === 0) {
       container.innerHTML = `
-        <div style="padding:32px 20px;text-align:center;color:var(--text-muted);font-size:13px;">
-          Watchlist ${store.activeWatchlist} is empty.<br>Use search bar above to add stocks or options like <b>LT</b>, <b>KVB</b>, <b>NIFTY CE</b>.
+        <div style="padding:40px 20px;text-align:center;color:var(--text-muted);font-size:13px;">
+          Watchlist ${store.activeWatchlist} is empty.<br>Use search bar above to add instruments.
         </div>
       `;
       return;
@@ -603,25 +625,36 @@ class App {
       if (!stock) return "";
       const isPositive = stock.change >= 0;
 
+      // Check if user has demat holding in this stock (matching Kite recording briefcase badge 💼 6)
+      const holding = (store.holdings || []).find(h => h.symbol === stock.symbol && h.quantity > 0 && h.status === "OPEN");
+      const holdingBadgeHtml = holding ? `
+        <span class="kite-holding-badge" title="Holding in Demat">
+          <span class="kite-holding-badge-icon">💼</span> ${holding.quantity}
+        </span>
+      ` : "";
+
       return `
-        <li class="stock-row" id="wl-row-${stock.symbol.replace(/\s+/g, '_')}" onclick="app.selectStock('${stock.symbol}')">
-          <div class="stock-info">
-            <div class="stock-symbol">
-              ${stock.symbol}
-              <span class="sector-tag ${stock.sectorClass}">${stock.sector}</span>
-              <span class="exchange-tag">${stock.exchange}</span>
+        <li class="stock-row kite-stock-item" id="wl-row-${stock.symbol.replace(/\s+/g, '_')}" onclick="app.selectStock('${stock.symbol}')">
+          <div class="kite-stock-left">
+            <div class="kite-stock-sym-row">
+              <span class="kite-stock-sym">${stock.symbol}</span>
             </div>
-            <div class="stock-fullname">${stock.name}</div>
-          </div>
-
-          <div class="stock-pricing" id="wl-price-${stock.symbol.replace(/\s+/g, '_')}">
-            <div class="stock-ltp ${isPositive ? 'text-green' : 'text-red'}">₹${stock.price.toFixed(2)}</div>
-            <div class="stock-delta ${isPositive ? 'text-green' : 'text-red'}">
-              ${isPositive ? '▲ +' : '▼ '}${stock.change.toFixed(2)} (${isPositive ? '+' : ''}${stock.pChange.toFixed(2)}%)
+            <div class="kite-stock-sub-row">
+              <span class="kite-stock-exchange">${stock.exchange || 'NSE'}</span>
+              ${holdingBadgeHtml}
             </div>
           </div>
 
-          <!-- Zerodha Signature Hover Actions -->
+          <div class="kite-stock-right" id="wl-price-${stock.symbol.replace(/\s+/g, '_')}">
+            <div class="kite-stock-ltp ${isPositive ? 'text-green' : 'text-red'}">
+              ₹${stock.price.toFixed(2)}
+            </div>
+            <div class="kite-stock-chg ${isPositive ? 'text-green' : 'text-red'}">
+              ${isPositive ? '+' : ''}${stock.change.toFixed(2)} (${isPositive ? '+' : ''}${stock.pChange.toFixed(2)}%)
+            </div>
+          </div>
+
+          <!-- Desktop hover actions -->
           <div class="stock-hover-actions">
             <button class="act-btn btn-buy-pill" title="Buy (B)" onclick="event.stopPropagation(); app.openOrderModal('${stock.symbol}', 'BUY');">B</button>
             <button class="act-btn btn-sell-pill" title="Sell (S)" onclick="event.stopPropagation(); app.openOrderModal('${stock.symbol}', 'SELL');">S</button>
@@ -1452,16 +1485,42 @@ class App {
 
     const totalPL = (totalCurrent - totalInvested) + totalRealizedGain;
     const isTotalPositive = totalPL >= 0;
+    const pnlPct = totalInvested > 0 ? (totalPL / totalInvested * 100) : 0;
 
+    const cardPctEl = document.getElementById("holdingsPnlCardPct");
+    const dayPnlValEl = document.getElementById("holdingsDayPnlVal");
+    const badgeHoldings = document.getElementById("portHoldingsTabBadge");
+    const badgeHoldings2 = document.getElementById("portHoldingsTabBadge2");
+
+    const openCount = (store.holdings || []).filter(h => h.quantity > 0 && h.status === "OPEN").length;
+    if (badgeHoldings) {
+      badgeHoldings.textContent = openCount;
+      badgeHoldings.style.display = openCount ? "inline-block" : "none";
+    }
+    if (badgeHoldings2) {
+      badgeHoldings2.textContent = openCount;
+      badgeHoldings2.style.display = openCount ? "inline-block" : "none";
+    }
+
+    if (cardInvested) cardInvested.textContent = this.privacyMode ? "••••••" : totalInvested.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (cardCurrent) cardCurrent.textContent = this.privacyMode ? "••••••" : totalCurrent.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     if (pnlCardVal) {
-      pnlCardVal.className = `kite-pnl-card-val ${isTotalPositive ? 'text-green' : 'text-red'}`;
-      pnlCardVal.textContent = `${isTotalPositive ? '+' : ''}${totalPL.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      pnlCardVal.className = `kite-hcard-pnl-val ${isTotalPositive ? 'text-green' : 'text-red'}`;
+      pnlCardVal.textContent = this.privacyMode ? "••••••" : `${isTotalPositive ? '+' : ''}${totalPL.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    if (cardPctEl) {
+      cardPctEl.className = `kite-hcard-pnl-pct ${isTotalPositive ? 'text-green' : 'text-red'}`;
+      cardPctEl.textContent = this.privacyMode ? "••••" : `[${isTotalPositive ? '+' : ''}${pnlPct.toFixed(2)}%]`;
+    }
+    if (dayPnlValEl) {
+      const isDayPositive = totalDayPL >= 0;
+      dayPnlValEl.className = `kite-sd-val ${isDayPositive ? 'text-green' : 'text-red'}`;
+      const dayPct = totalCurrent > 0 ? (totalDayPL / totalCurrent * 100) : 0;
+      dayPnlValEl.textContent = this.privacyMode ? "••••••" : `${isDayPositive ? '+' : ''}${totalDayPL.toFixed(2)} (${isDayPositive ? '+' : ''}${dayPct.toFixed(2)}%)`;
     }
 
     if (pnlCardSub && totalInvested > 0) {
       pnlCardSub.style.display = "flex";
-      if (cardInvested) cardInvested.textContent = `₹${totalInvested.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
-      if (cardCurrent) cardCurrent.textContent = `₹${totalCurrent.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
     } else if (pnlCardSub) {
       pnlCardSub.style.display = "none";
     }
@@ -1590,9 +1649,21 @@ class App {
     const totalNetPositionsPL = totalMTM + totalRealized;
     const isTotalProfitable = totalNetPositionsPL >= 0;
 
+    const badgePos = document.getElementById("portPositionsTabBadge");
+    const badgePos2 = document.getElementById("portPositionsTabBadge2");
+    const openPosCount = (store.positions || []).filter(p => p.quantity !== 0 && p.status === "OPEN").length || store.positions.length;
+    if (badgePos) {
+      badgePos.textContent = openPosCount;
+      badgePos.style.display = openPosCount ? "inline-block" : "none";
+    }
+    if (badgePos2) {
+      badgePos2.textContent = openPosCount;
+      badgePos2.style.display = openPosCount ? "inline-block" : "none";
+    }
+
     if (pnlCardVal) {
       pnlCardVal.className = `kite-pnl-card-val ${isTotalProfitable ? 'text-green' : 'text-red'}`;
-      pnlCardVal.textContent = `${isTotalProfitable ? '+' : ''}${totalNetPositionsPL.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      pnlCardVal.textContent = this.privacyMode ? "••••••" : `${isTotalProfitable ? '+' : ''}${totalNetPositionsPL.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
 
     if (mtmKpi) {
@@ -1815,117 +1886,166 @@ class App {
     }
   }
 
-  // 4. Orders View
+  // 4. Orders View (Zerodha Kite Mobile Subtabs & Empty States)
   renderOrders() {
+    const listEl = document.getElementById("kiteOrdersList");
+    const emptyEl = document.getElementById("kiteOrdersEmpty");
+    const emptyTitleEl = document.getElementById("ordersEmptyTitle");
+    const openBadge = document.getElementById("orderOpenTabBadge");
+    const execBadge = document.getElementById("orderExecutedTabBadge");
+    const mobBadgeOrders = document.getElementById("mobBadgeOrders");
     const tbody = document.getElementById("ordersTableBody");
     const emptyState = document.getElementById("ordersEmptyState");
-    const mobCards = document.getElementById("ordersMobileCards");
 
-    if (!tbody) return;
+    const subtab = this.activeOrderSubtab || "open";
 
-    if (store.orders.length === 0) {
-      tbody.innerHTML = "";
-      if (emptyState) emptyState.style.display = "block";
-      if (mobCards) {
-        mobCards.innerHTML = `
-          <div class="mob-empty-msg">
-            <div style="font-size:24px;margin-bottom:6px;">📋</div>
-            <div style="font-weight:700;color:var(--text-dark);margin-bottom:4px;">No orders placed yet</div>
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Execute demo trades on stocks or options.</div>
-            <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="app.switchMobileTab('watchlist')">Browse Watchlist</button>
-          </div>
-        `;
-      }
-      return;
+    // Subtab highlight
+    document.querySelectorAll(".kite-orders-subtabs .kite-subtab-btn").forEach(btn => {
+      btn.classList.remove("active");
+    });
+    const subtabKey = subtab.charAt(0).toUpperCase() + subtab.slice(1);
+    const activeSubtabBtn = document.getElementById(`orderTab${subtabKey}`);
+    if (activeSubtabBtn) activeSubtabBtn.classList.add("active");
+
+    const openOrders = (store.orders || []).filter(o => o.status === "OPEN" || o.status === "AMO PENDING");
+    const executedOrders = (store.orders || []).filter(o => o.status === "COMPLETE" || o.status === "CANCELLED" || o.status === "REJECTED");
+
+    if (openBadge) {
+      openBadge.textContent = openOrders.length;
+      openBadge.style.display = openOrders.length ? "inline-block" : "none";
+    }
+    if (execBadge) {
+      execBadge.textContent = executedOrders.length;
+      execBadge.style.display = executedOrders.length ? "inline-block" : "none";
+    }
+    if (mobBadgeOrders) {
+      mobBadgeOrders.textContent = openOrders.length;
+      mobBadgeOrders.style.display = openOrders.length ? "inline-block" : "none";
     }
 
-    if (emptyState) emptyState.style.display = "none";
+    let itemsToDisplay = [];
+    if (subtab === "open") {
+      itemsToDisplay = openOrders;
+      if (emptyTitleEl) emptyTitleEl.textContent = "No pending orders";
+    } else if (subtab === "executed") {
+      itemsToDisplay = executedOrders;
+      if (emptyTitleEl) emptyTitleEl.textContent = "No executed orders";
+    } else if (subtab === "gtt") {
+      itemsToDisplay = [];
+      if (emptyTitleEl) emptyTitleEl.textContent = "No active GTT triggers";
+    } else if (subtab === "baskets") {
+      itemsToDisplay = [];
+      if (emptyTitleEl) emptyTitleEl.textContent = "No baskets created";
+    } else if (subtab === "sips") {
+      itemsToDisplay = [];
+      if (emptyTitleEl) emptyTitleEl.textContent = "No SIPs scheduled";
+    }
 
-    const cardsHtml = [];
+    if (this.ordersSearchQuery) {
+      const q = this.ordersSearchQuery.toLowerCase();
+      itemsToDisplay = itemsToDisplay.filter(o => o.symbol.toLowerCase().includes(q) || (o.name && o.name.toLowerCase().includes(q)));
+    }
 
-    tbody.innerHTML = store.orders.map((o) => {
-      const isComplete = o.status === "COMPLETE";
-      const isAMO = o.status === "AMO PENDING";
-      const isOpen = o.status === "OPEN";
+    if (itemsToDisplay.length === 0) {
+      if (listEl) listEl.innerHTML = "";
+      if (emptyEl) emptyEl.style.display = "flex";
+    } else {
+      if (emptyEl) emptyEl.style.display = "none";
+      if (listEl) {
+        listEl.innerHTML = itemsToDisplay.map(o => {
+          const isBuy = o.side === "BUY";
+          const isComplete = o.status === "COMPLETE";
+          const isOpen = o.status === "OPEN";
+          const isAMO = o.status === "AMO PENDING";
+          const statusClass = isComplete ? "text-green" : (isOpen || isAMO) ? "text-blue" : "text-red";
+          
+          return `
+            <div class="kite-stock-item" onclick="app.openOrderSheet('${o.id}')">
+              <div class="kite-stock-left">
+                <div class="kite-stock-sym-row">
+                  <span class="kite-stock-sym">${o.symbol}</span>
+                  <span class="kite-holding-badge" style="background:${isBuy ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)'}; color:${isBuy ? '#10b981' : '#ef4444'};">${isBuy ? '▲ BUY' : '▼ SELL'}</span>
+                  <span class="badge-tag tag-cnc" style="font-size:10px;">${o.product}</span>
+                </div>
+                <div class="kite-stock-sub-row">
+                  <span class="kite-stock-exchange">${o.orderType} • Qty: ${o.quantity}</span>
+                  <span style="font-size:11px;color:#8892a0;">${o.time}</span>
+                </div>
+              </div>
+              <div class="kite-stock-right">
+                <div class="kite-stock-ltp">₹${o.price.toFixed(2)}</div>
+                <div class="kite-stock-chg ${statusClass}" style="font-weight:700;">${o.status}</div>
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+    }
 
-      cardsHtml.push(`
-        <div class="mob-pos-card">
-          <div class="mob-pos-top">
-            <div class="mob-pos-left">
-              <span class="badge-tag ${o.side === 'BUY' ? 'tag-cnc' : 'tag-mis'}" style="font-weight:800;">${o.side}</span>
-              <span class="badge-tag ${o.product === 'CNC' || o.product === 'NRML' ? 'tag-cnc' : 'tag-mis'}">${o.product}</span>
-              <span class="mob-pos-symbol">${o.symbol}</span>
-            </div>
-            <div>
-              <span class="badge-tag ${isComplete ? 'tag-complete' : isAMO ? 'tag-amo' : isOpen ? 'tag-open' : 'tag-cancelled'}">
-                ${o.status}
-              </span>
-            </div>
-          </div>
-          <div class="mob-pos-mid">
-            <div class="mob-pos-stat">
-              <span class="stat-lbl">Type</span>
-              <span class="stat-val font-bold">${o.orderType}</span>
-            </div>
-            <div class="mob-pos-stat">
-              <span class="stat-lbl">Qty</span>
-              <span class="stat-val font-bold">${o.quantity}</span>
-            </div>
-            <div class="mob-pos-stat">
-              <span class="stat-lbl">Price</span>
-              <span class="stat-val font-bold">₹${o.price.toFixed(2)}</span>
-            </div>
-            <div class="mob-pos-stat">
-              <span class="stat-lbl">Time</span>
-              <span class="stat-val" style="font-size:11px;">${o.time}</span>
-            </div>
-          </div>
-          ${o.statusMessage ? `<div style="font-size:11.5px;color:var(--text-secondary);padding:0 4px 6px;">${o.statusMessage}</div>` : ''}
-          ${(isOpen || isAMO) ? `
-            <div class="mob-pos-actions">
-              <button class="mob-btn-execute" onclick="app.forceExecuteOrder('${o.id}')">⚡ Execute Now</button>
-              <button class="mob-btn-exit" onclick="app.cancelOrder('${o.id}')">Cancel</button>
-            </div>
-          ` : ''}
-        </div>
-      `);
+    // Sync legacy desktop table if present
+    if (tbody) {
+      if (store.orders.length === 0) {
+        tbody.innerHTML = "";
+        if (emptyState) emptyState.style.display = "block";
+      } else {
+        if (emptyState) emptyState.style.display = "none";
+        tbody.innerHTML = store.orders.map(o => {
+          const isComplete = o.status === "COMPLETE";
+          const isAMO = o.status === "AMO PENDING";
+          const isOpen = o.status === "OPEN";
+          return `
+            <tr>
+              <td><span style="font-family:monospace;font-size:12px;color:var(--text-muted);">${o.time}</span></td>
+              <td><span class="badge-tag ${o.side === 'BUY' ? 'tag-cnc' : 'tag-mis'}" style="font-weight:800;">${o.side}</span></td>
+              <td><div class="font-bold text-dark">${o.symbol}</div></td>
+              <td><span class="badge-tag tag-cnc">${o.product}</span></td>
+              <td><b>${o.orderType}</b></td>
+              <td class="text-right font-bold">${o.quantity}</td>
+              <td class="text-right font-bold">₹${o.price.toFixed(2)}</td>
+              <td><span class="badge-tag ${isComplete ? 'tag-complete' : isAMO ? 'tag-amo' : isOpen ? 'tag-open' : 'tag-cancelled'}">${o.status}</span></td>
+              <td class="text-right">
+                ${(isOpen || isAMO) ? `
+                  <button class="btn-primary" style="padding:3px 8px;font-size:11px;margin-right:4px;" onclick="app.forceExecuteOrder('${o.id}')">Execute</button>
+                  <button class="btn-danger" style="padding:3px 8px;font-size:11px;" onclick="app.cancelOrder('${o.id}')">Cancel</button>
+                ` : '—'}
+              </td>
+            </tr>
+          `;
+        }).join("");
+      }
+    }
+  }
 
-      return `
-        <tr>
-          <td><span style="font-family:monospace;font-size:12px;color:var(--text-muted);">${o.time}</span></td>
-          <td>
-            <span class="badge-tag ${o.side === 'BUY' ? 'tag-cnc' : 'tag-mis'}" style="font-weight:800;">
-              ${o.side}
-            </span>
-          </td>
-          <td>
-            <div class="font-bold text-dark">
-              ${o.symbol}
-              ${o.isOption ? `<span class="badge-tag ${o.optionType === 'CE' ? 'badge-ce' : 'badge-pe'}" style="margin-left:4px;">${o.optionType}</span>` : ''}
-            </div>
-            <div style="font-size:11.5px;color:var(--text-secondary);">${o.name}</div>
-          </td>
-          <td><span class="badge-tag ${o.product === 'CNC' || o.product === 'NRML' ? 'tag-cnc' : 'tag-mis'}">${o.product}</span></td>
-          <td><b>${o.orderType}</b></td>
-          <td class="text-right font-bold">${o.quantity}</td>
-          <td class="text-right font-bold">₹${o.price.toFixed(2)}</td>
-          <td>
-            <span class="badge-tag ${isComplete ? 'tag-complete' : isAMO ? 'tag-amo' : isOpen ? 'tag-open' : 'tag-cancelled'}">
-              ${o.status}
-            </span>
-            <span style="font-size:11px;color:var(--text-secondary);margin-left:6px;">${o.statusMessage || ''}</span>
-          </td>
-          <td class="text-right">
-            ${(isOpen || isAMO) ? `
-              <button class="btn-primary" style="padding:3px 8px;font-size:11px;margin-right:4px;" onclick="app.forceExecuteOrder('${o.id}')" title="Instantly execute order">Execute</button>
-              <button class="btn-danger" style="padding:3px 8px;font-size:11px;" onclick="app.cancelOrder('${o.id}')">Cancel</button>
-            ` : '—'}
-          </td>
-        </tr>
-      `;
-    }).join("");
+  switchOrderSubtab(subtab) {
+    this.activeOrderSubtab = subtab;
+    this.renderOrders();
+  }
 
-    if (mobCards) mobCards.innerHTML = cardsHtml.join("");
+  toggleOrderSearch() {
+    const el = document.getElementById("ordersSearchExpand");
+    if (!el) return;
+    el.style.display = el.style.display === "none" ? "block" : "none";
+    if (el.style.display === "block") {
+      const input = document.getElementById("ordersSearchInput");
+      if (input) input.focus();
+    }
+  }
+
+  toggleOrderFilter() {
+    window.showToast("Filtered by order status", "info");
+  }
+
+  filterOrders(query) {
+    this.ordersSearchQuery = query;
+    this.renderOrders();
+  }
+
+  openContractNoteModal() {
+    window.showToast("Demo Contract Note: Zero brokerage applied to demo trades", "info");
+  }
+
+  openTradebookModal() {
+    window.showToast("Demo Tradebook: All trades executed on Trade Pulse simulated exchange", "info");
   }
 
   forceExecuteOrder(orderId) {
@@ -1949,17 +2069,112 @@ class App {
     }
   }
 
-  // 5. Funds View
+  // 5. Bids View (IPO, Govt. securities, Auctions)
+  renderBids() {
+    const subtab = this.activeBidsSubtab || "ipo";
+    document.querySelectorAll(".kite-bids-subtabs .kite-subtab-btn").forEach(btn => btn.classList.remove("active"));
+    const subtabKey = subtab.charAt(0).toUpperCase() + subtab.slice(1);
+    const activeBtn = document.getElementById(`bidsTab${subtabKey}`);
+    if (activeBtn) activeBtn.classList.add("active");
+
+    const titleEl = document.getElementById("bidsEmptyTitle");
+    if (titleEl) {
+      if (subtab === "ipo") titleEl.textContent = "No securities available for bidding";
+      else if (subtab === "govt") titleEl.textContent = "No govt. securities available for bidding";
+      else if (subtab === "auctions") titleEl.textContent = "No auctions available for bidding";
+    }
+  }
+
+  switchBidsSubtab(subtab) {
+    this.activeBidsSubtab = subtab;
+    this.renderBids();
+  }
+
+  toggleBidsSearch() {
+    window.showToast("Search IPOs & Govt. securities (Demo mode)", "info");
+  }
+
+  toggleBidsFilter() {
+    window.showToast("Filter securities", "info");
+  }
+
+  // 6. Account View (Profile, Privacy Mode, Funds & Settings)
+  renderAccount() {
+    const user = store.currentUser || { name: "Demo Learner", email: "demo@tradepulse.app", clientId: "TP7842" };
+    const nameEl = document.getElementById("accountTopUserName");
+    const idEl = document.getElementById("accountCardClientId");
+    const emailEl = document.getElementById("accountCardEmail");
+    const avatarEl = document.getElementById("accountCardAvatar");
+    const navUserEl = document.getElementById("mobBottomNavUserId");
+    const toggle = document.getElementById("privacyModeToggle");
+
+    if (nameEl) nameEl.textContent = user.name || "Demo Learner";
+    if (idEl) idEl.textContent = user.clientId || "TP7842";
+    if (emailEl) emailEl.textContent = user.email || "demo@tradepulse.app";
+    if (avatarEl) {
+      const initials = (user.name || "Demo Learner").split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+      avatarEl.textContent = initials || "TP";
+    }
+    if (navUserEl) navUserEl.textContent = user.clientId || "TP7842";
+    if (toggle) toggle.checked = !!this.privacyMode;
+  }
+
+  togglePrivacyMode(isChecked) {
+    this.privacyMode = !!isChecked;
+    this.renderHoldings();
+    this.renderPositions();
+    this.renderFunds();
+    window.showToast(`Privacy mode ${this.privacyMode ? 'enabled (balances hidden)' : 'disabled'}`, 'info');
+  }
+
+  // 7. Funds View (Available Margin, Add Funds, Withdraw / Reset)
   renderFunds() {
     const availEl = document.getElementById("fundsAvailableMargin");
+    const cashEl = document.getElementById("fundsAvailableCash");
     const usedEl = document.getElementById("fundsUsedMargin");
+    const openEl = document.getElementById("fundsOpeningBalance");
+    const payinEl = document.getElementById("fundsPayin");
+    const delivEl = document.getElementById("fundsDeliveryMargin");
+    const optEl = document.getElementById("fundsOptionPremium");
     const totalCashEl = document.getElementById("fundsTotalCash");
     const initCapitalEl = document.getElementById("fundsInitialCapital");
 
-    if (availEl) availEl.textContent = `₹${store.funds.availableCash.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
-    if (usedEl) usedEl.textContent = `₹${store.funds.usedMargin.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
-    if (totalCashEl) totalCashEl.textContent = `₹${store.funds.totalBalance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
-    if (initCapitalEl) initCapitalEl.textContent = `₹${store.funds.initialCapital.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+    const avail = store.funds.availableCash;
+    const used = store.funds.usedMargin || 0;
+    const initial = store.funds.initialCapital || 20000;
+
+    if (availEl) availEl.textContent = this.privacyMode ? "••••••" : `₹${avail.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+    if (cashEl) cashEl.textContent = this.privacyMode ? "••••••" : avail.toLocaleString("en-IN", { minimumFractionDigits: 2 });
+    if (usedEl) usedEl.textContent = this.privacyMode ? "••••••" : used.toLocaleString("en-IN", { minimumFractionDigits: 2 });
+    if (openEl) openEl.textContent = this.privacyMode ? "••••••" : initial.toLocaleString("en-IN", { minimumFractionDigits: 2 });
+    if (payinEl) payinEl.textContent = "0.00";
+    if (delivEl) delivEl.textContent = "0.00";
+    if (optEl) optEl.textContent = "0.00";
+    if (totalCashEl) totalCashEl.textContent = this.privacyMode ? "••••••" : `₹${store.funds.totalBalance.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+    if (initCapitalEl) initCapitalEl.textContent = this.privacyMode ? "••••••" : `₹${initial.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+  }
+
+  addDemoCapital(amount = 10000) {
+    store.funds.availableCash += amount;
+    store.funds.totalBalance += amount;
+    store.saveUserData();
+    this.renderFunds();
+    this.renderUserQuickFunds();
+    window.playChime();
+    window.showToast(`Added +₹${amount.toLocaleString("en-IN")} demo funds!`, "success");
+  }
+
+  resetDemoCapital(amount = 20000) {
+    if (confirm(`Withdraw/Reset virtual funds back to ₹${amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}?`)) {
+      store.funds.availableCash = amount;
+      store.funds.usedMargin = 0.00;
+      store.funds.totalBalance = amount;
+      store.saveUserData();
+      this.renderFunds();
+      this.renderUserQuickFunds();
+      window.playChime();
+      window.showToast(`Demo balance reset to ₹${amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`, "success");
+    }
   }
 
   setupFundsActions() {
@@ -1967,39 +2182,22 @@ class App {
     const addCashBtn = document.getElementById("addDemoCashBtn");
 
     if (resetBtn) {
-      resetBtn.addEventListener("click", () => {
-        if (confirm("Reset your demo account back to ₹20,000.00? (This will clear open demo orders and holdings)")) {
-          store.resetFunds(20000);
-          window.playChime();
-          window.showToast("Demo account reset to ₹20,000.00!", "success");
-          this.renderUserQuickFunds();
-          this.renderActiveView();
-        }
-      });
+      resetBtn.onclick = () => this.resetDemoCapital(20000);
     }
-
     if (addCashBtn) {
-      addCashBtn.addEventListener("click", () => {
-        store.addDemoCash(10000);
-        window.playChime();
-        window.showToast("Added +₹10,000 practice funds to demo account!", "success");
-        this.renderUserQuickFunds();
-        this.renderActiveView();
-      });
+      addCashBtn.onclick = () => this.addDemoCapital(10000);
     }
   }
 
   // ==========================================================================
-  // ZERODHA KITE MOBILE CONTROLLER
+  // ZERODHA KITE MOBILE CONTROLLER & 5 TABS NAVIGATION
   // ==========================================================================
   setupMobile() {
-    // If mobile viewport on initial page load, default to Watchlist view
     if (window.innerWidth <= 768) {
       document.body.setAttribute("data-mobile-tab", "watchlist");
       this.updateMobileTabState("watchlist");
     }
 
-    // Sync mobile tick toggle in Funds tab with engine
     const mobTickToggle = document.getElementById("forceMarketTickToggleMob");
     const desktopTickToggle = document.getElementById("forceMarketTickToggle");
     if (mobTickToggle) {
@@ -2010,7 +2208,6 @@ class App {
       });
     }
 
-    // Window resize handler: gracefully sync layout
     window.addEventListener("resize", () => {
       if (window.innerWidth > 768) {
         document.body.removeAttribute("data-mobile-tab");
@@ -2027,21 +2224,84 @@ class App {
     this.activeMobileTab = tab;
     this.updateMobileTabState(tab);
 
+    // Hide indices drawer when changing tab
+    const drawer = document.getElementById("kiteMobIndicesDrawer");
+    if (drawer) drawer.style.display = "none";
+
+    // Update Header title
+    const titleEl = document.getElementById("mobHeaderTitle");
+    if (titleEl) {
+      const titles = {
+        watchlist: "Watchlist",
+        orders: "Orders",
+        portfolio: "Portfolio",
+        bids: "Bids",
+        account: "Account",
+        funds: "Funds"
+      };
+      titleEl.textContent = titles[tab] || "Trade Pulse";
+    }
+
     if (tab === "watchlist") {
       this.renderWatchlist();
       const pane = document.querySelector(".watchlist-pane");
       if (pane) pane.scrollTop = 0;
     } else if (tab === "orders") {
       this.switchView("orders");
+      this.renderOrders();
     } else if (tab === "portfolio") {
-      // Smart mobile default: if user has open positions and no holdings, default to positions; else holdings
-      if (this.currentView === "positions" || (store.positions.length > 0 && store.holdings.length === 0)) {
+      if (this.currentView === "positions") {
         this.switchView("positions");
       } else {
         this.switchView("holdings");
       }
+    } else if (tab === "bids") {
+      this.switchView("bids");
+      this.renderBids();
+    } else if (tab === "account") {
+      this.switchView("account");
+      this.renderAccount();
     } else if (tab === "funds") {
       this.switchView("funds");
+      this.renderFunds();
+    }
+  }
+
+  toggleMobileIndices() {
+    const drawer = document.getElementById("kiteMobIndicesDrawer");
+    if (!drawer) return;
+    const isHidden = drawer.style.display === "none" || !drawer.style.display;
+    drawer.style.display = isHidden ? "block" : "none";
+
+    if (isHidden) {
+      const nifty = (typeof INDICES_DATA !== "undefined" && Array.isArray(INDICES_DATA)) ? INDICES_DATA.find(i => i.symbol === "NIFTY 50") : null;
+      const sensex = (typeof INDICES_DATA !== "undefined" && Array.isArray(INDICES_DATA)) ? INDICES_DATA.find(i => i.symbol === "SENSEX") : null;
+
+      const nPrice = document.getElementById("mobNiftyPrice");
+      const nChg = document.getElementById("mobNiftyChange");
+      const sPrice = document.getElementById("mobSensexPrice");
+      const sChg = document.getElementById("mobSensexChange");
+
+      const np = nifty ? nifty.price : 24423.65;
+      const nc = nifty ? nifty.change : 463.05;
+      const npc = nifty ? nifty.pChange : 1.93;
+
+      const sp = sensex ? sensex.price : 78840.60;
+      const sc = sensex ? sensex.change : 1520.00;
+      const spc = sensex ? sensex.pChange : 1.97;
+
+      if (nPrice) nPrice.textContent = np.toLocaleString("en-IN", { minimumFractionDigits: 2 });
+      if (nChg) {
+        const isPos = nc >= 0;
+        nChg.className = `mob-idx-change ${isPos ? 'text-green' : 'text-red'}`;
+        nChg.textContent = `${isPos ? '+' : ''}${nc.toFixed(2)} (${isPos ? '+' : ''}${npc.toFixed(2)}%)`;
+      }
+      if (sPrice) sPrice.textContent = sp.toLocaleString("en-IN", { minimumFractionDigits: 2 });
+      if (sChg) {
+        const isPos = sc >= 0;
+        sChg.className = `mob-idx-change ${isPos ? 'text-green' : 'text-red'}`;
+        sChg.textContent = `${isPos ? '+' : ''}${sc.toFixed(2)} (${isPos ? '+' : ''}${spc.toFixed(2)}%)`;
+      }
     }
   }
 
@@ -2079,7 +2339,6 @@ class App {
       deltaEl.textContent = `${isPos ? '+' : ''}${stock.change.toFixed(2)} (${isPos ? '+' : ''}${stock.pChange.toFixed(2)}%)`;
     }
 
-    // OHLC Summary stats
     const openVal = stock.prevClose ? (stock.prevClose * 1.002).toFixed(2) : stock.price.toFixed(2);
     const highVal = (stock.price * 1.012).toFixed(2);
     const lowVal = (stock.price * 0.988).toFixed(2);
@@ -2095,7 +2354,6 @@ class App {
     if (statLow) statLow.textContent = `₹${lowVal}`;
     if (statClose) statClose.textContent = `₹${prevVal}`;
 
-    // Action button listeners
     if (btnBuy) {
       btnBuy.onclick = () => {
         this.closeStockSheet();
@@ -2133,6 +2391,114 @@ class App {
   closeStockSheet() {
     const sheet = document.getElementById("mobileStockSheetBackdrop");
     if (sheet) sheet.classList.remove("open");
+  }
+
+  openHoldingSheet(symbol) {
+    const h = (store.holdings || []).find(item => item.symbol === symbol);
+    if (!h) return;
+    const stock = STOCKS_MAP.get(symbol);
+    const ltp = stock ? stock.price : (h.exitPrice || h.avgPrice);
+    const isClosed = h.quantity === 0 || h.status === "CLOSED";
+    const pl = isClosed ? (h.realizedPL || 0) : ((h.quantity * ltp) - h.investedValue);
+
+    this.activeSheetItem = { type: "holding", data: h };
+
+    const symEl = document.getElementById("kiteSheetSymbol");
+    const subEl = document.getElementById("kiteSheetSub");
+    const ltpEl = document.getElementById("kiteSheetLtp");
+    const pnlEl = document.getElementById("kiteSheetPnl");
+    const exitBtn = document.getElementById("kiteSheetBtnExit");
+
+    if (symEl) symEl.textContent = h.symbol;
+    if (subEl) subEl.textContent = `${h.exchange || 'NSE'} • CNC • Demat Qty: ${isClosed ? 0 : h.quantity}`;
+    if (ltpEl) ltpEl.textContent = `₹${ltp.toFixed(2)}`;
+    if (pnlEl) {
+      pnlEl.className = `kite-sheet-pnl ${pl >= 0 ? 'text-green' : 'text-red'}`;
+      pnlEl.textContent = `${pl >= 0 ? '+' : ''}₹${pl.toFixed(2)} ${isClosed ? '(Sold)' : ''}`;
+    }
+    if (exitBtn) {
+      exitBtn.style.display = isClosed ? "none" : "flex";
+      exitBtn.textContent = "🔴 Sell Holding";
+    }
+
+    const sheet = document.getElementById("kiteItemSheetBackdrop");
+    if (sheet) sheet.style.display = "flex";
+  }
+
+  openOrderSheet(orderId) {
+    const order = (store.orders || []).find(o => o.id === orderId);
+    if (!order) return;
+    this.activeSheetItem = { type: "order", data: order };
+
+    const symEl = document.getElementById("kiteSheetSymbol");
+    const subEl = document.getElementById("kiteSheetSub");
+    const ltpEl = document.getElementById("kiteSheetLtp");
+    const pnlEl = document.getElementById("kiteSheetPnl");
+    const exitBtn = document.getElementById("kiteSheetBtnExit");
+
+    if (symEl) symEl.textContent = order.symbol;
+    if (subEl) subEl.textContent = `${order.side} • ${order.orderType} • Qty: ${order.quantity}`;
+    if (ltpEl) ltpEl.textContent = `₹${order.price.toFixed(2)}`;
+    if (pnlEl) {
+      pnlEl.className = "kite-sheet-pnl text-blue";
+      pnlEl.textContent = order.status;
+    }
+    if (exitBtn) {
+      const canCancel = order.status === "OPEN" || order.status === "AMO PENDING";
+      exitBtn.style.display = canCancel ? "flex" : "none";
+      exitBtn.textContent = "Cancel Order";
+    }
+
+    const sheet = document.getElementById("kiteItemSheetBackdrop");
+    if (sheet) sheet.style.display = "flex";
+  }
+
+  closeItemSheet() {
+    const sheet = document.getElementById("kiteItemSheetBackdrop");
+    if (sheet) sheet.style.display = "none";
+  }
+
+  actionSheetExit() {
+    if (!this.activeSheetItem) return;
+    const { type, data } = this.activeSheetItem;
+    this.closeItemSheet();
+
+    if (type === "position") {
+      this.exitPosition(data.id);
+    } else if (type === "holding") {
+      this.openOrderModal(data.symbol, "SELL");
+    } else if (type === "order") {
+      this.cancelOrder(data.id);
+    }
+  }
+
+  actionSheetAdd() {
+    if (!this.activeSheetItem) return;
+    const { data } = this.activeSheetItem;
+    this.closeItemSheet();
+    this.openOrderModal(data.symbol, "BUY");
+  }
+
+  actionSheetChart() {
+    if (!this.activeSheetItem) return;
+    const { data } = this.activeSheetItem;
+    this.closeItemSheet();
+    this.openChartModal(data.symbol);
+  }
+
+  actionSheetDepth() {
+    if (!this.activeSheetItem) return;
+    const { data } = this.activeSheetItem;
+    this.closeItemSheet();
+    this.openDepthModal(data.symbol);
+  }
+
+  openFabChart() {
+    if (this.selectedStock) {
+      this.openChartModal(this.selectedStock.symbol);
+    } else {
+      this.openChartModal("NIFTY 50");
+    }
   }
 }
 

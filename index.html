@@ -106,40 +106,101 @@
     </div>
   </header>
 
+  <!-- ==================== AUTHENTIC ZERODHA KITE MOBILE TOP HEADER ==================== -->
+  <div class="kite-mobile-header" id="kiteMobileHeader">
+    <div class="mob-header-left">
+      <h1 class="mob-header-title" id="mobHeaderTitle">Watchlist</h1>
+    </div>
+    <div class="mob-header-right">
+      <button class="mob-header-btn" id="mobCartBtn" onclick="app.switchMobileTab('orders')" title="Orders Cart">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="21" r="1"></circle>
+          <circle cx="20" cy="21" r="1"></circle>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        </svg>
+      </button>
+      <button class="mob-header-btn" id="mobChevronBtn" onclick="app.toggleMobileIndices()" title="Market Overview">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile Live Indices Overview Dropdown (Drops down when clicking chevron) -->
+  <div class="kite-mob-indices-drawer" id="kiteMobIndicesDrawer" style="display:none;">
+    <div class="mob-indices-header">
+      <div class="mob-indices-title">Trade Pulse Market Overview</div>
+      <div class="market-status-pill open" id="mobMarketStatusPill">
+        <span class="status-dot"></span>
+        <span id="mobMarketStatusText">MARKET OPEN</span>
+      </div>
+    </div>
+    <div class="mob-indices-cards">
+      <div class="mob-index-card" onclick="app.selectStock('NIFTY 50'); app.toggleMobileIndices();">
+        <div class="mob-idx-name">NIFTY 50</div>
+        <div class="mob-idx-price text-green" id="mobNiftyPrice">24,423.65</div>
+        <div class="mob-idx-change text-green" id="mobNiftyChange">+463.05 (+1.93%)</div>
+      </div>
+      <div class="mob-index-card" onclick="app.selectStock('SENSEX'); app.toggleMobileIndices();">
+        <div class="mob-idx-name">SENSEX</div>
+        <div class="mob-idx-price text-green" id="mobSensexPrice">78,840.60</div>
+        <div class="mob-idx-change text-green" id="mobSensexChange">+1,520.00 (+1.97%)</div>
+      </div>
+    </div>
+    <div class="mob-indices-footer">
+      <span>Demo Account Virtual Terminal • ₹20,000 Refill</span>
+      <button class="btn-text-blue" onclick="app.simulateNextDay()">🌅 Fast-Forward Day (T+1)</button>
+    </div>
+  </div>
+
   <!-- Main Application Body -->
   <main class="app-container">
     
-    <!-- LEFT PANE: Watchlist (Tabs 1-5, Live Search, Hover B/S, Depth, Chart) -->
+    <!-- LEFT PANE: Watchlist (Tabs 1-7, Live Search & Add, Clean Kite Rows) -->
     <aside class="watchlist-pane">
       
-      <!-- Search Filter Bar -->
-      <div class="watchlist-search-box">
-        <div class="search-input-wrap">
-          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <!-- Kite Watchlist Subtabs (Scrollable 1 to 7 matching recording) -->
+      <div class="kite-subtabs-bar kite-wl-subtabs-bar">
+        <button class="kite-subtab-btn active" data-wl="1">Watchlist 1</button>
+        <button class="kite-subtab-btn" data-wl="2">Watchlist 2</button>
+        <button class="kite-subtab-btn" data-wl="3">Watchlist 3</button>
+        <button class="kite-subtab-btn" data-wl="4">Watchlist 4</button>
+        <button class="kite-subtab-btn" data-wl="5">Watchlist 5</button>
+        <button class="kite-subtab-btn" data-wl="6">Watchlist 6</button>
+        <button class="kite-subtab-btn" data-wl="7">Watchlist 7</button>
+      </div>
+
+      <!-- Kite Floating "Search & add" Bar (Exact match to Frames 1-6) -->
+      <div class="kite-wl-search-wrap">
+        <div class="kite-wl-search-box">
+          <svg class="kite-search-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
           <input 
             type="text" 
             id="watchlistSearchInput" 
-            class="watchlist-search-input" 
-            placeholder="Search e.g. NIFTY CE, LT 3600, KVB PE..."
+            class="kite-wl-search-input" 
+            placeholder="Search &amp; add" 
             autocomplete="off"
           >
-          <span class="search-count-pill" id="watchlistCountPill">8 / 50</span>
+          <div class="kite-wl-search-meta">
+            <span class="kite-wl-count-label" id="watchlistCountPill">14/100</span>
+            <span class="kite-wl-pipe">|</span>
+            <button class="kite-wl-filter-btn" onclick="app.toggleWatchlistFilter()" title="Filter watchlist">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line>
+                <line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line>
+                <line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line>
+              </svg>
+            </button>
+          </div>
         </div>
 
         <!-- Search Overlay Results Dropdown -->
         <div class="search-results-overlay" id="searchResultsOverlay" style="display: none;"></div>
-      </div>
-
-      <!-- Watchlist Tabs 1 to 5 (Tab 5 for F&O Options) -->
-      <div class="watchlist-tabs">
-        <div class="wl-tab active" data-wl="1">1</div>
-        <div class="wl-tab" data-wl="2">2</div>
-        <div class="wl-tab" data-wl="3">3</div>
-        <div class="wl-tab" data-wl="4">4</div>
-        <div class="wl-tab" data-wl="5" title="Options (Call & Put) contracts">5 F&amp;O</div>
       </div>
 
       <!-- Stock Rows List -->
@@ -151,54 +212,103 @@
     <!-- RIGHT PANE: Main Workspace Views -->
     <section class="workspace-pane">
 
-      <!-- ==================== 1. ORDERS VIEW ==================== -->
+      <!-- ==================== 1. ORDERS VIEW (Zerodha Kite Style) ==================== -->
       <div class="view-section active" id="view-orders">
-        <div class="page-title-row">
-          <div>
-            <h1 class="page-title">Order Book</h1>
-            <p class="page-subtitle">Track your open limit orders and executed demo market trades (Stocks &amp; Options).</p>
+        <div class="kite-orders-container">
+          <!-- Kite Orders Subtabs (Open, Executed, GTT, Baskets, SIPs) -->
+          <div class="kite-subtabs-bar kite-orders-subtabs">
+            <button class="kite-subtab-btn active" id="orderTabOpen" onclick="app.switchOrderSubtab('open')">
+              Open <span class="kite-tab-pill-badge" id="orderOpenTabBadge" style="display:none;">0</span>
+            </button>
+            <button class="kite-subtab-btn" id="orderTabExecuted" onclick="app.switchOrderSubtab('executed')">
+              Executed <span class="kite-tab-pill-badge" id="orderExecutedTabBadge" style="display:none;">0</span>
+            </button>
+            <button class="kite-subtab-btn" id="orderTabGTT" onclick="app.switchOrderSubtab('gtt')">GTT</button>
+            <button class="kite-subtab-btn" id="orderTabBaskets" onclick="app.switchOrderSubtab('baskets')">Baskets</button>
+            <button class="kite-subtab-btn" id="orderTabSIPs" onclick="app.switchOrderSubtab('sips')">SIPs</button>
           </div>
-        </div>
 
-        <div class="table-card">
-          <div class="table-toolbar">
-            <input type="text" class="table-filter-input" placeholder="Search orders...">
-            <span style="font-size:12px;color:var(--text-muted);">Real-time execution engine active</span>
+          <!-- Orders Toolbar (Search, Filter, Contract note, Tradebook) -->
+          <div class="kite-filter-toolbar">
+            <div class="kite-ft-left">
+              <button class="kite-ft-icon-btn" onclick="app.toggleOrderSearch()" title="Search orders">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </button>
+              <button class="kite-ft-icon-btn" onclick="app.toggleOrderFilter()" title="Filter orders">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line>
+                  <line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line>
+                  <line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line>
+                  <line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line>
+                </svg>
+              </button>
+            </div>
+            <div class="kite-ft-right">
+              <button class="kite-ft-text-btn" id="orderContractNoteBtn" onclick="app.openContractNoteModal()" style="display:none;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+                <span>Contract note</span>
+              </button>
+              <button class="kite-ft-sort-btn" onclick="app.openTradebookModal()">
+                <span class="kite-blue-ring-dot"></span>
+                <span>Tradebook</span>
+              </button>
+            </div>
           </div>
 
-          <!-- Mobile Cards Container for Orders -->
-          <div class="mobile-portfolio-cards" id="ordersMobileCards"></div>
+          <!-- Expandable Search Input -->
+          <div class="kite-search-expand" id="ordersSearchExpand" style="display:none;">
+            <input type="text" id="ordersSearchInput" placeholder="Search orders by symbol or id..." oninput="app.filterOrders(this.value)">
+          </div>
 
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Type</th>
-                <th>Instrument</th>
-                <th>Product</th>
-                <th>Order Type</th>
-                <th class="text-right">Qty</th>
-                <th class="text-right">Price</th>
-                <th>Status</th>
-                <th class="text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody id="ordersTableBody">
-              <!-- Rendered dynamically -->
-            </tbody>
-          </table>
+          <!-- Authentic Orders List -->
+          <div class="kite-items-list" id="kiteOrdersList"></div>
 
-          <div class="empty-state" id="ordersEmptyState" style="display:none;">
-            <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-              <polyline points="10 9 9 9 8 9"></polyline>
-            </svg>
-            <div class="empty-title">No orders placed yet</div>
-            <div class="empty-desc">Select any stock or option contract from your watchlist and tap <b>[B]</b> to execute your first demo order.</div>
-            <button class="btn-primary" onclick="app.openOrderModal('LT', 'BUY')">Place Demo Order</button>
+          <!-- Authentic Zerodha Kite Empty State with Document Illustration -->
+          <div class="kite-orders-empty" id="kiteOrdersEmpty" style="display:none;">
+            <div class="kite-doc-illustration">
+              <svg width="150" height="130" viewBox="0 0 160 140" fill="none">
+                <rect x="25" y="25" width="110" height="90" rx="4" stroke="#cbd5e1" stroke-width="1.8" stroke-dasharray="4 4"/>
+                <path d="M95 32 A16 16 0 0 1 118 20 Z" fill="#fbbf24"/>
+                <polygon points="35,90 42,98 32,96" fill="#387ed1"/>
+                <polygon points="128,92 135,96 130,102" fill="#ef4444"/>
+                <g transform="rotate(-15 65 65)">
+                  <rect x="35" y="25" width="55" height="75" rx="3" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="1.2"/>
+                  <line x1="42" y1="36" x2="52" y2="36" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+                  <line x1="42" y1="42" x2="56" y2="42" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+                  <line x1="42" y1="48" x2="50" y2="48" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M58 50 Q62 42 66 52 T74 54 T80 60" fill="none" stroke="#64748b" stroke-width="1.4" stroke-linecap="round"/>
+                  <circle cx="70" cy="33" r="2" fill="#387ed1"/>
+                  <circle cx="76" cy="36" r="2" fill="#387ed1"/>
+                  <circle cx="80" cy="40" r="2" fill="#ef4444"/>
+                </g>
+                <g transform="rotate(18 100 80)">
+                  <rect x="70" y="42" width="52" height="70" rx="3" fill="#cbd5e1" stroke="#94a3b8" stroke-width="1.2"/>
+                  <line x1="77" y1="52" x2="88" y2="52" stroke="#64748b" stroke-width="2" stroke-linecap="round"/>
+                  <line x1="77" y1="58" x2="94" y2="58" stroke="#64748b" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M78 80 Q84 72 90 82 T98 84" fill="none" stroke="#475569" stroke-width="1.4" stroke-linecap="round"/>
+                </g>
+              </svg>
+            </div>
+            <div class="kite-empty-title" id="ordersEmptyTitle">No pending orders</div>
+            <div class="kite-empty-desc">Place an order from your watchlist</div>
+            <div style="display:flex;justify-content:center;margin-top:14px;">
+              <button class="btn-primary" style="font-size:12px;padding:7px 16px;" onclick="app.switchMobileTab('watchlist')">Go to Watchlist</button>
+            </div>
+          </div>
+
+          <!-- Hidden legacy table hooks for compatibility -->
+          <div style="display:none;">
+            <tbody id="ordersTableBody"></tbody>
+            <div id="ordersMobileCards"></div>
+            <div id="ordersEmptyState"></div>
           </div>
         </div>
       </div>
@@ -228,18 +338,29 @@
             </div>
           </div>
 
-          <!-- Kite Total P&L Card -->
-          <div class="kite-total-pnl-card">
-            <div class="kite-pnl-card-title">Total P&amp;L</div>
-            <div class="kite-pnl-card-val text-green" id="holdingsPnlCardVal">₹0.00</div>
-            <div class="kite-pnl-card-sub" id="holdingsPnlCardSub" style="display:none;">
-              <span>Invested: <b id="holdingsCardInvested">₹0.00</b></span>
-              <span>•</span>
-              <span>Current: <b id="holdingsCardCurrent">₹0.00</b></span>
+          <!-- Kite Holdings Total P&L Card (Exact Match to Frame 11 & 13) -->
+          <div class="kite-holdings-pnl-card">
+            <div class="kite-hcard-row-top">
+              <div class="kite-hcard-col">
+                <div class="kite-hcard-lbl">Invested</div>
+                <div class="kite-hcard-num" id="holdingsCardInvested">0.00</div>
+              </div>
+              <div class="kite-hcard-col text-right">
+                <div class="kite-hcard-lbl">Current</div>
+                <div class="kite-hcard-num" id="holdingsCardCurrent">0.00</div>
+              </div>
+            </div>
+            <div class="kite-hcard-divider"></div>
+            <div class="kite-hcard-row-bottom">
+              <span class="kite-hcard-lbl">P&amp;L</span>
+              <div class="kite-hcard-pnl-group">
+                <span class="kite-hcard-pnl-val" id="holdingsPnlCardVal">+0.00</span>
+                <span class="kite-hcard-pnl-pct text-green" id="holdingsPnlCardPct">+0.00%</span>
+              </div>
             </div>
           </div>
 
-          <!-- Kite Search & Filter Bar -->
+          <!-- Kite Search & Filter Bar (Exact Match to Frame 11) -->
           <div class="kite-filter-toolbar">
             <div class="kite-ft-left">
               <button class="kite-ft-icon-btn" onclick="app.togglePortSearch('holdings')" title="Search">
@@ -250,30 +371,33 @@
               </button>
               <button class="kite-ft-icon-btn" onclick="app.togglePortFilter('holdings')" title="Filter">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                  <line x1="4" y1="21" x2="4" y2="14"></line>
-                  <line x1="4" y1="10" x2="4" y2="3"></line>
-                  <line x1="12" y1="21" x2="12" y2="12"></line>
-                  <line x1="12" y1="8" x2="12" y2="3"></line>
-                  <line x1="20" y1="21" x2="20" y2="16"></line>
-                  <line x1="20" y1="12" x2="20" y2="3"></line>
-                  <line x1="1" y1="14" x2="7" y2="14"></line>
-                  <line x1="9" y1="8" x2="15" y2="8"></line>
-                  <line x1="17" y1="16" x2="23" y2="16"></line>
+                  <line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line>
+                  <line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line>
+                  <line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line>
+                  <line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line>
                 </svg>
               </button>
-              <button class="kite-ft-text-btn" onclick="app.togglePortGrouping('holdings')">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                  <line x1="3" y1="12" x2="21" y2="12"></line>
-                  <line x1="3" y1="6" x2="21" y2="6"></line>
-                  <line x1="3" y1="18" x2="21" y2="18"></line>
+              <button class="kite-ft-icon-btn" title="Authorization" onclick="window.showToast('Demo Account: Demat delivery authorized', 'info')">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                 </svg>
-                <span>Group</span>
               </button>
+              <div class="kite-pill-select" onclick="app.togglePortFilter('holdings')">Equity ⌵</div>
             </div>
             <div class="kite-ft-right">
+              <button class="kite-ft-text-btn" onclick="window.showToast('Family portfolio view (Demo)', 'info')">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                <span>Family</span>
+              </button>
               <button class="kite-ft-sort-btn" onclick="app.sortPortItems('holdings')">
-                <span class="kite-blue-dot"></span>
-                <span>P&amp;L</span>
+                <span class="kite-blue-ring-dot"></span>
+                <span>Analytics</span>
               </button>
             </div>
           </div>
@@ -285,6 +409,12 @@
 
           <!-- Authentic Zerodha Kite Items List for Holdings -->
           <div class="kite-items-list" id="holdingsKiteList"></div>
+
+          <!-- Kite Sticky Bottom Day's P&L Bar (Exact Match to Frame 11 & 13) -->
+          <div class="kite-sticky-day-pnl" id="kiteStickyDayPnl">
+            <span class="kite-sd-label">Day's P&amp;L</span>
+            <span class="kite-sd-val text-green" id="holdingsDayPnlVal">+0.00 (+0.00%)</span>
+          </div>
 
           <!-- Empty State -->
           <div class="empty-state" id="holdingsEmptyState" style="display:none;">
@@ -395,95 +525,268 @@
         </div>
       </div>
 
-      <!-- ==================== 5. FUNDS VIEW ==================== -->
-      <div class="view-section" id="view-funds">
-        <!-- Mobile User Profile Card (Zerodha Kite Mobile Profile Tab) -->
-        <div class="mobile-profile-card">
-          <div class="mob-prof-user-row">
-            <div class="user-avatar mob-prof-avatar" id="mobUserAvatar">TP</div>
-            <div class="mob-prof-info">
-              <div class="mob-prof-name" id="mobUserName">Demo Learner</div>
-              <div class="mob-prof-email" id="mobUserEmail">demo@tradepulse.app</div>
-              <div class="mob-prof-clientid" id="mobUserClientId">Client ID: TP7842</div>
+      <!-- ==================== 5. BIDS VIEW (Zerodha Kite Style - Frame 15) ==================== -->
+      <div class="view-section" id="view-bids">
+        <div class="kite-bids-container">
+          <!-- Bids Subtabs (IPO, Govt. securities, Auctions) -->
+          <div class="kite-subtabs-bar kite-bids-subtabs">
+            <button class="kite-subtab-btn active" id="bidsTabIpo" onclick="app.switchBidsSubtab('ipo')">IPO</button>
+            <button class="kite-subtab-btn" id="bidsTabGovt" onclick="app.switchBidsSubtab('govt')">Govt. securities</button>
+            <button class="kite-subtab-btn" id="bidsTabAuctions" onclick="app.switchBidsSubtab('auctions')">Auctions</button>
+          </div>
+
+          <!-- Bids Toolbar (Search, Filter) -->
+          <div class="kite-filter-toolbar">
+            <div class="kite-ft-left">
+              <button class="kite-ft-icon-btn" onclick="app.toggleBidsSearch()" title="Search securities">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              </button>
+              <button class="kite-ft-icon-btn" onclick="app.toggleBidsFilter()" title="Filter securities">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+              </button>
+            </div>
+            <div class="kite-ft-right">
+              <span style="font-size:12px;color:var(--text-secondary);font-weight:600;">Trade Pulse Demo Bids</span>
             </div>
           </div>
-          <div class="mob-prof-actions-row">
-            <button class="btn-secondary" style="flex:1;font-size:12px;padding:8px;" onclick="app.simulateNextDay()">
-              🌅 Fast-Forward (T+1)
+
+          <!-- Authentic Zerodha Kite Empty State with Document Illustration -->
+          <div class="kite-orders-empty">
+            <div class="kite-doc-illustration">
+              <svg width="150" height="130" viewBox="0 0 160 140" fill="none">
+                <rect x="25" y="25" width="110" height="90" rx="4" stroke="#cbd5e1" stroke-width="1.8" stroke-dasharray="4 4"/>
+                <path d="M95 32 A16 16 0 0 1 118 20 Z" fill="#fbbf24"/>
+                <polygon points="35,90 42,98 32,96" fill="#387ed1"/>
+                <polygon points="128,92 135,96 130,102" fill="#ef4444"/>
+                <g transform="rotate(-15 65 65)">
+                  <rect x="35" y="25" width="55" height="75" rx="3" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="1.2"/>
+                  <line x1="42" y1="36" x2="52" y2="36" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+                  <line x1="42" y1="42" x2="56" y2="42" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+                  <line x1="42" y1="48" x2="50" y2="48" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M58 50 Q62 42 66 52 T74 54 T80 60" fill="none" stroke="#64748b" stroke-width="1.4" stroke-linecap="round"/>
+                  <circle cx="70" cy="33" r="2" fill="#387ed1"/>
+                  <circle cx="76" cy="36" r="2" fill="#387ed1"/>
+                  <circle cx="80" cy="40" r="2" fill="#ef4444"/>
+                </g>
+                <g transform="rotate(18 100 80)">
+                  <rect x="70" y="42" width="52" height="70" rx="3" fill="#cbd5e1" stroke="#94a3b8" stroke-width="1.2"/>
+                  <line x1="77" y1="52" x2="88" y2="52" stroke="#64748b" stroke-width="2" stroke-linecap="round"/>
+                  <line x1="77" y1="58" x2="94" y2="58" stroke="#64748b" stroke-width="2" stroke-linecap="round"/>
+                  <path d="M78 80 Q84 72 90 82 T98 84" fill="none" stroke="#475569" stroke-width="1.4" stroke-linecap="round"/>
+                </g>
+              </svg>
+            </div>
+            <div class="kite-empty-title" id="bidsEmptyTitle">No securities available for bidding</div>
+            <div class="kite-empty-desc">
+              <a href="javascript:void(0)" onclick="window.showToast('Demo Environment: All bidding is simulated with virtual funds', 'info')" style="color:#387ed1;text-decoration:none;font-weight:600;">Read more</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== 6. ACCOUNT VIEW (Zerodha Kite Style - Frame 18) ==================== -->
+      <div class="view-section" id="view-account">
+        <div class="kite-account-container">
+          <!-- Top Subheader: User Name + Bell Icon (Frame 18) -->
+          <div class="kite-account-top-bar">
+            <div class="kite-acc-user-title" id="accountTopUserName">Demo Learner</div>
+            <button class="kite-acc-bell-btn" onclick="window.showToast('No new notifications', 'info')" title="Notifications">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
             </button>
-            <button class="btn-secondary" style="flex:1;font-size:12px;padding:8px;" onclick="app.openAuthModal('signup')">
-              👤 New Account
+          </div>
+
+          <!-- Elevated Profile Card (Frame 18) -->
+          <div class="kite-account-card">
+            <div class="kite-acc-card-main">
+              <div class="kite-acc-card-info">
+                <div class="kite-acc-client-id" id="accountCardClientId">TP7842</div>
+                <div class="kite-acc-email" id="accountCardEmail">demo@tradepulse.app</div>
+              </div>
+              <div class="kite-acc-avatar-circle" id="accountCardAvatar">TP</div>
+            </div>
+            <div class="kite-acc-privacy-row">
+              <span class="kite-privacy-lbl">Privacy mode</span>
+              <label class="kite-switch">
+                <input type="checkbox" id="privacyModeToggle" onchange="app.togglePrivacyMode(this.checked)">
+                <span class="kite-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Account Menu List (Frame 18) -->
+          <div class="kite-account-menu-section">
+            <div class="kite-acc-menu-header">Account</div>
+
+            <div class="kite-acc-menu-item" onclick="app.switchMobileTab('funds')">
+              <div class="kite-menu-left">
+                <span class="kite-menu-title">Funds</span>
+              </div>
+              <div class="kite-menu-right">
+                <span class="kite-menu-icon-symbol">₹</span>
+              </div>
+            </div>
+
+            <div class="kite-acc-menu-item" onclick="window.showToast('Demo 2FA App Code active: 849201', 'info')">
+              <div class="kite-menu-left">
+                <span class="kite-menu-title">App Code</span>
+              </div>
+              <div class="kite-menu-right">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8892a0" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              </div>
+            </div>
+
+            <div class="kite-acc-menu-item" onclick="window.showToast('Demo Profile: Client ID TP7842 (Trade Pulse Sandbox)', 'info')">
+              <div class="kite-menu-left">
+                <span class="kite-menu-title">Profile</span>
+              </div>
+              <div class="kite-menu-right">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8892a0" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              </div>
+            </div>
+
+            <div class="kite-acc-menu-item" onclick="app.toggleSettingsModal()">
+              <div class="kite-menu-left">
+                <span class="kite-menu-title">Settings</span>
+              </div>
+              <div class="kite-menu-right">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8892a0" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+              </div>
+            </div>
+
+            <div class="kite-acc-menu-item" onclick="window.showToast('Connected to Trade Pulse Demo Trading Engine', 'info')">
+              <div class="kite-menu-left">
+                <span class="kite-menu-title">Connected apps</span>
+              </div>
+              <div class="kite-menu-right">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8892a0" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+              </div>
+            </div>
+
+            <div class="kite-acc-menu-item" onclick="app.simulateNextDay()">
+              <div class="kite-menu-left">
+                <span class="kite-menu-title">🌅 Advance Trading Day (T+1 Settlement)</span>
+              </div>
+              <div class="kite-menu-right">
+                <span style="font-size:12px;color:#387ed1;font-weight:700;">Fast-Forward</span>
+              </div>
+            </div>
+
+            <div class="kite-acc-menu-item" onclick="store.logout(); app.renderUserQuickFunds(); app.renderActiveView(); app.openAuthModal('login');">
+              <div class="kite-menu-left">
+                <span class="kite-menu-title" style="color:#ef4444;">🚪 Logout Demo Account</span>
+              </div>
+              <div class="kite-menu-right">
+                <span style="font-size:12px;color:#ef4444;font-weight:600;">Exit</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== 7. FUNDS VIEW (Zerodha Kite Style - Frames 20 & 21) ==================== -->
+      <div class="view-section" id="view-funds">
+        <div class="kite-funds-container">
+          <!-- Funds Header with Back Arrow (Frame 20) -->
+          <div class="kite-funds-header">
+            <button class="kite-funds-back-btn" onclick="app.switchMobileTab('account')" title="Back to Account">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
             </button>
-            <button class="btn-danger" style="flex:1;font-size:12px;padding:8px;" onclick="store.logout(); app.renderUserQuickFunds(); app.renderActiveView(); app.openAuthModal('login');">
-              🚪 Logout
+            <h1 class="kite-funds-title">Funds</h1>
+            <div style="width:32px;"></div>
+          </div>
+
+          <!-- Elevated Available Margin Card (Frame 20) -->
+          <div class="kite-funds-card">
+            <div class="kite-funds-card-lbl">
+              <span>Available margin (Cash + Collateral)</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8892a0" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            </div>
+            <div class="kite-funds-card-val" id="fundsAvailableMargin">₹20,000.00</div>
+            <div class="kite-funds-view-statement" onclick="app.openTradebookModal()">
+              <span class="kite-blue-ring-dot"></span>
+              <span>View statement</span>
+            </div>
+          </div>
+
+          <!-- Two Buttons: Add Funds (Green) & Withdraw / Reset (Blue) (Frame 20) -->
+          <div class="kite-funds-actions-row">
+            <button class="kite-btn-add-funds" id="addDemoCashBtn" onclick="app.addDemoCapital(10000)">
+              <span style="font-size:16px;">+</span> Add funds
+            </button>
+            <button class="kite-btn-withdraw" id="resetDemoFundsBtn" onclick="app.resetDemoCapital(20000)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              <span>Withdraw</span>
             </button>
           </div>
-          <div class="mob-prof-toggle-row">
-            <span style="font-size:12px;color:var(--text-secondary);font-weight:600;">Force Live Ticks (Demo Mode):</span>
-            <input type="checkbox" id="forceMarketTickToggleMob" style="accent-color:var(--tp-blue);width:18px;height:18px;cursor:pointer;">
-          </div>
-        </div>
 
-        <div class="page-title-row">
-          <div>
-            <h1 class="page-title">Funds &amp; Demo Capital</h1>
-            <p class="page-subtitle">Virtual balance for learning and risk-free trading skill development.</p>
+          <!-- Available Cash / Used Margin Summary (Frame 20) -->
+          <div class="kite-funds-summary-row">
+            <div class="kite-fsum-col">
+              <span class="kite-fsum-lbl">Available cash</span>
+              <span class="kite-fsum-val" id="fundsAvailableCash">20,000.00</span>
+            </div>
+            <div class="kite-fsum-col text-right">
+              <span class="kite-fsum-lbl">Used margin</span>
+              <span class="kite-fsum-val" id="fundsUsedMargin">0.00</span>
+            </div>
           </div>
-          <div style="display:flex;gap:10px;">
-            <button class="btn-secondary" id="addDemoCashBtn">+ Add Demo ₹10,000</button>
-            <button class="btn-primary" id="resetDemoFundsBtn">Reset to ₹20,000</button>
-          </div>
-        </div>
 
-        <div class="demo-info-banner">
-          <div class="demo-info-text">
-            <h3>🛡️ Demo Trading Sandbox Environment</h3>
-            <p>This terminal is purpose-built for learning market skills. Real financial deposits and withdrawals are intentionally disabled. You are supplied with <b>₹20,000.00 virtual capital</b> upon signup, with unlimited free reloads anytime.</p>
+          <!-- Detailed Margin Breakdown Table (Frame 20) -->
+          <div class="kite-funds-table">
+            <div class="kite-ftable-row">
+              <span class="kite-ftable-lbl">Opening balance</span>
+              <span class="kite-ftable-val" id="fundsOpeningBalance">20,000.00</span>
+            </div>
+            <div class="kite-ftable-row">
+              <span class="kite-ftable-lbl">Payin</span>
+              <span class="kite-ftable-val" id="fundsPayin">0.00</span>
+            </div>
+            <div class="kite-ftable-row">
+              <span class="kite-ftable-lbl">Payout</span>
+              <span class="kite-ftable-val">0.00</span>
+            </div>
+            <div class="kite-ftable-row">
+              <span class="kite-ftable-lbl">SPAN</span>
+              <span class="kite-ftable-val">0.00</span>
+            </div>
+            <div class="kite-ftable-row">
+              <span class="kite-ftable-lbl">Delivery margin</span>
+              <span class="kite-ftable-val" id="fundsDeliveryMargin">0.00</span>
+            </div>
+            <div class="kite-ftable-row">
+              <span class="kite-ftable-lbl">Exposure</span>
+              <span class="kite-ftable-val">0.00</span>
+            </div>
+            <div class="kite-ftable-row">
+              <span class="kite-ftable-lbl">Option premium</span>
+              <span class="kite-ftable-val" id="fundsOptionPremium">0.00</span>
+            </div>
+            <div class="kite-ftable-divider"></div>
+            <div class="kite-ftable-row">
+              <span class="kite-ftable-lbl">Collateral (Liquid funds)</span>
+              <span class="kite-ftable-val">0.00</span>
+            </div>
+            <div class="kite-ftable-row">
+              <span class="kite-ftable-lbl">Collateral (Equity)</span>
+              <span class="kite-ftable-val">0.00</span>
+            </div>
           </div>
-        </div>
 
-        <div class="kpi-grid">
-          <div class="kpi-card kpi-card-emerald">
-            <div class="kpi-label">Available Margin</div>
-            <div class="kpi-val text-green" id="fundsAvailableMargin">₹20,000.00</div>
-            <div class="kpi-sub">Ready to trade stocks &amp; options</div>
+          <!-- Hidden legacy funds elements for desktop sync -->
+          <div style="display:none;">
+            <div id="fundsTotalCash">₹20,000.00</div>
+            <div id="fundsInitialCapital">₹20,000.00</div>
+            <div id="mobUserName">Demo Learner</div>
+            <div id="mobUserEmail">demo@tradepulse.app</div>
+            <div id="mobUserClientId">Client ID: TP7842</div>
+            <div id="mobUserAvatar">TP</div>
+            <input type="checkbox" id="forceMarketTickToggleMob">
           </div>
-          <div class="kpi-card kpi-card-amber">
-            <div class="kpi-label">Used Margin</div>
-            <div class="kpi-val text-amber" id="fundsUsedMargin">₹0.00</div>
-            <div class="kpi-sub">Blocked in open orders / positions</div>
-          </div>
-          <div class="kpi-card kpi-card-purple">
-            <div class="kpi-label">Total Cash Balance</div>
-            <div class="kpi-val text-purple" id="fundsTotalCash">₹20,000.00</div>
-            <div class="kpi-sub">Total account equity</div>
-          </div>
-          <div class="kpi-card kpi-card-cyan">
-            <div class="kpi-label">Initial Credit</div>
-            <div class="kpi-val text-blue" id="fundsInitialCapital">₹20,000.00</div>
-            <div class="kpi-sub">Default signup allowance</div>
-          </div>
-        </div>
-
-        <div class="table-card" style="padding: 24px;">
-          <h3 style="font-size:16px;font-weight:800;margin-bottom:14px;color:var(--text-dark);">Demo Account Features &amp; Rules</h3>
-          <ul style="list-style-type: none; display: flex; flex-direction: column; gap: 12px; font-size: 13.5px; color: var(--text-secondary);">
-            <li style="display:flex;align-items:center;gap:10px;">
-              <span style="color:var(--tp-green-bright);font-weight:bold;font-size:16px;">✓</span> <b>₹20,000 Initial Demo Capital:</b> Credited automatically to every newcomer upon sign up.
-            </li>
-            <li style="display:flex;align-items:center;gap:10px;">
-              <span style="color:var(--tp-green-bright);font-weight:bold;font-size:16px;">✓</span> <b>Call &amp; Put Options Trading:</b> Complete Options Chain for NIFTY, SENSEX, NIFTY BANK, L&amp;T, KVB, Reliance, and all stocks!
-            </li>
-            <li style="display:flex;align-items:center;gap:10px;">
-              <span style="color:var(--tp-green-bright);font-weight:bold;font-size:16px;">✓</span> <b>Authentic NSE Equities:</b> Accurate prices matching live Zerodha market rates (L&amp;T ₹4,018.50, KVB ₹343.90, Reliance ₹1,311.20, TCS ₹2,436.00, HDFC Bank ₹757.20, Bank Nifty ₹57,050.25, etc.).
-            </li>
-            <li style="display:flex;align-items:center;gap:10px;">
-              <span style="color:var(--tp-green-bright);font-weight:bold;font-size:16px;">✓</span> <b>Product Types:</b> Support for CNC (Cash &amp; Carry Long-Term), MIS (Intraday with 5x leverage), and NRML (Options).
-            </li>
-            <li style="display:flex;align-items:center;gap:10px;">
-              <span style="color:var(--tp-green-bright);font-weight:bold;font-size:16px;">✓</span> <b>Zero Real Money Risk:</b> No deposit or withdrawal required. Practice strategies freely.
-            </li>
-          </ul>
         </div>
       </div>
 
@@ -962,7 +1265,7 @@
       <span class="mob-nav-label">Portfolio</span>
     </button>
 
-    <button class="mob-nav-item" data-mob-tab="bids" onclick="app.openOptionChainModal('NIFTY 50')">
+    <button class="mob-nav-item" data-mob-tab="bids" onclick="app.switchMobileTab('bids')">
       <div class="mob-nav-icon">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="m14 13-7.5 7.5c-.8.8-2 .8-2.8 0s-.8-2 0-2.8L11.2 10.2"></path>
@@ -975,7 +1278,7 @@
       <span class="mob-nav-label">Bids</span>
     </button>
 
-    <button class="mob-nav-item" data-mob-tab="funds" onclick="app.switchMobileTab('funds')">
+    <button class="mob-nav-item" data-mob-tab="account" onclick="app.switchMobileTab('account')">
       <div class="mob-nav-icon">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
