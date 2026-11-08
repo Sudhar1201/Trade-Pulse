@@ -138,24 +138,16 @@ class MarketEngine {
     const status = this.getMarketStatus();
     this.notifyStatusListeners(status);
 
-    if (status.isOpen) {
+    if (status.isOpen && this.store) {
       // Execute any pending AMO orders when market is active
-      if (this.store) {
-        this.store.executeAllPendingAMOOrders();
-      }
+      this.store.executeAllPendingAMOOrders();
+    }
 
-      if (!this.timer) {
-        // Run tick cycle every 1.5s while market is OPEN
-        this.timer = setInterval(() => {
-          this.tick();
-        }, 1500);
-      }
-    } else {
-      // Market CLOSED: Freeze prices completely at last closing quotes
-      if (this.timer) {
-        clearInterval(this.timer);
-        this.timer = null;
-      }
+    // Continuous live market price updates at all times (every 1.5s)
+    if (!this.timer) {
+      this.timer = setInterval(() => {
+        this.tick();
+      }, 1500);
     }
   }
 
@@ -185,19 +177,27 @@ class MarketEngine {
     });
   }
 
-  // Tick execution only runs during market hours
+  // Continuous live tick execution (updates market prices every 1.5s)
   tick() {
-    const status = this.getMarketStatus();
-    if (!status.isOpen) return;
-
     const updatedStocks = [];
     const updatedIndices = [];
 
     const underlyingKeys = ALL_UNDERLYINGS.map(u => u.symbol);
-    const tickCount = Math.floor(Math.random() * 3) + 2;
+    const tickCount = Math.floor(Math.random() * 4) + 2;
     const pickedIndices = new Set();
     while (pickedIndices.size < Math.min(tickCount, underlyingKeys.length)) {
       pickedIndices.add(Math.floor(Math.random() * underlyingKeys.length));
+    }
+
+    // Always include symbols of any open positions so user sees active trades update in real-time
+    if (this.store && Array.isArray(this.store.positions)) {
+      this.store.positions.forEach(p => {
+        if (p.status === "OPEN") {
+          const underlyingSym = p.underlying || p.symbol;
+          const idx = underlyingKeys.indexOf(underlyingSym);
+          if (idx !== -1) pickedIndices.add(idx);
+        }
+      });
     }
 
     pickedIndices.forEach(idx => {

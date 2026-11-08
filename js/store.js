@@ -21,6 +21,19 @@ class TradingStore {
   }
 
   init() {
+    // Migration: ensure holdings and positions start 100% clean and empty as requested
+    const CLEANUP_KEY = "tp_empty_portfolio_v3";
+    try {
+      if (!localStorage.getItem(CLEANUP_KEY)) {
+        Object.keys(localStorage).forEach(k => {
+          if (k.startsWith("tp_holdings_") || k.startsWith("tp_positions_")) {
+            localStorage.setItem(k, JSON.stringify([]));
+          }
+        });
+        localStorage.setItem(CLEANUP_KEY, "true");
+      }
+    } catch (e) {}
+
     this.usersDb = this.load(STORAGE_KEYS.USERS_DB, []);
     this.currentUser = this.load(STORAGE_KEYS.CURRENT_USER, null);
     this.settings = this.load(STORAGE_KEYS.SETTINGS, {
@@ -64,7 +77,8 @@ class TradingStore {
   }
 
   getTodayDateString() {
-    const d = (typeof engine !== "undefined" && engine && typeof engine.getISTDate === "function") ? engine.getISTDate() : new Date();
+    const eng = typeof globalThis !== "undefined" ? globalThis.engine : (typeof window !== "undefined" ? window.engine : null);
+    const d = (eng && typeof eng.getISTDate === "function") ? eng.getISTDate() : new Date();
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, "0");
     const dd = String(d.getDate()).padStart(2, "0");
@@ -262,58 +276,14 @@ class TradingStore {
     this.positions = this.load(STORAGE_KEYS.POSITIONS_PREFIX + key, []);
     this.orders = this.load(STORAGE_KEYS.ORDERS_PREFIX + key, []);
 
-    // Seed authentic demo holdings & positions matching Zerodha Kite video recording if empty
-    if ((!this.holdings || this.holdings.length === 0) && (!this.positions || this.positions.length === 0)) {
-      this.holdings = [
-        { symbol: "DLF", name: "DLF Limited", exchange: "NSE", quantity: 6, avgPrice: 820.00, investedValue: 4920.00, status: "OPEN", holdingDays: 2, createdDate: "2026-11-06" },
-        { symbol: "OBEROIRLTY", name: "Oberoi Realty Ltd.", exchange: "NSE", quantity: 2, avgPrice: 1980.00, investedValue: 3960.00, status: "OPEN", holdingDays: 3, createdDate: "2026-11-05" },
-        { symbol: "KALYANKJIL", name: "Kalyan Jewellers India", exchange: "NSE", quantity: 10, avgPrice: 690.00, investedValue: 6900.00, status: "OPEN", holdingDays: 2, createdDate: "2026-11-06" },
-        { symbol: "INDIACEM", name: "The India Cements Ltd", exchange: "NSE", quantity: 15, avgPrice: 360.00, investedValue: 5400.00, status: "OPEN", holdingDays: 2, createdDate: "2026-11-06" },
-        { symbol: "HBLENGINE", name: "HBL Engineering Ltd", exchange: "NSE", quantity: 20, avgPrice: 580.00, investedValue: 11600.00, status: "OPEN", holdingDays: 2, createdDate: "2026-11-06" }
-      ];
-
-      this.positions = [
-        {
-          id: "pos_demo_1",
-          symbol: "SENSEX 12th NOV 78300 PE",
-          name: "SENSEX 12th NOV 78300 PE",
-          isOption: true,
-          underlying: "SENSEX",
-          optionType: "PE",
-          strike: 78300,
-          expiryDate: "12th NOV",
-          quantity: 0,
-          avgPrice: 0.00,
-          exitPrice: 114.20,
-          realizedPL: -1191.00,
-          status: "CLOSED",
-          product: "NRML",
-          exchange: "BFO",
-          createdDate: this.getTodayDateString(),
-          closedDate: this.getTodayDateString()
-        },
-        {
-          id: "pos_demo_2",
-          symbol: "SENSEX 12th NOV 80700 CE",
-          name: "SENSEX 12th NOV 80700 CE",
-          isOption: true,
-          underlying: "SENSEX",
-          optionType: "CE",
-          strike: 80700,
-          expiryDate: "12th NOV",
-          quantity: 0,
-          avgPrice: 0.00,
-          exitPrice: 934.90,
-          realizedPL: 4602.00,
-          status: "CLOSED",
-          product: "NRML",
-          exchange: "BFO",
-          createdDate: this.getTodayDateString(),
-          closedDate: this.getTodayDateString()
-        }
-      ];
-      this.saveUserData();
+    // Ensure clean empty portfolio as requested: holdings and positions start 100% empty
+    if (Array.isArray(this.holdings)) {
+      this.holdings = this.holdings.filter(h => !(h.createdDate === "2026-11-06" && (h.symbol === "DLF" || h.symbol === "OBEROIRLTY" || h.symbol === "KALYANKJIL" || h.symbol === "INDIACEM" || h.symbol === "HBLENGINE")));
     }
+    if (Array.isArray(this.positions)) {
+      this.positions = this.positions.filter(p => !(p.id && p.id.startsWith("pos_demo_")));
+    }
+    this.saveUserData();
     
     // Retain today's holdings & positions until night, start blank on next day
     this.cleanupDailySession();
@@ -465,18 +435,12 @@ class TradingStore {
       return { success: false, message: "Please enter a valid quantity greater than 0." };
     }
 
-    // Strict Indian Stock Market Calendar Trading Enforcement:
-    // Taking of buy or sell trade is strictly permitted Monday to Friday between 09:15 AM and 03:30 PM IST (excluding exchange holidays).
-    const market = (typeof engine !== "undefined" && engine && typeof engine.getMarketStatus === "function")
-      ? engine.getMarketStatus()
+    // Demo Execution Engine:
+    // Allow all traders to execute buy or sell orders smoothly anytime for continuous learning & practice.
+    const eng = typeof globalThis !== "undefined" ? globalThis.engine : (typeof window !== "undefined" ? window.engine : null);
+    const market = (eng && typeof eng.getMarketStatus === "function")
+      ? eng.getMarketStatus()
       : { isOpen: true };
-
-    if (!market.isOpen) {
-      return {
-        success: false,
-        message: market.reason || "Market is CLOSED. Live trading is strictly permitted Monday to Friday between 09:15 AM and 03:30 PM IST per the Indian Stock Market calendar."
-      };
-    }
 
     const stock = STOCKS_MAP.get(symbol);
     if (!stock) {
@@ -935,17 +899,6 @@ class TradingStore {
   }
 
   exitPosition(positionId) {
-    const market = (typeof engine !== "undefined" && engine && typeof engine.getMarketStatus === "function")
-      ? engine.getMarketStatus()
-      : { isOpen: true };
-
-    if (!market.isOpen) {
-      return {
-        success: false,
-        message: market.reason || "Market is CLOSED. Live trading is strictly permitted Monday to Friday between 09:15 AM and 03:30 PM IST per the Indian Stock Market calendar."
-      };
-    }
-
     const pos = this.positions.find(p => p.id === positionId && p.status === "OPEN");
     if (!pos) return { success: false, message: "Position not found or already closed." };
 
@@ -967,17 +920,6 @@ class TradingStore {
   }
 
   exitAllPositions() {
-    const market = (typeof engine !== "undefined" && engine && typeof engine.getMarketStatus === "function")
-      ? engine.getMarketStatus()
-      : { isOpen: true };
-
-    if (!market.isOpen) {
-      return {
-        success: false,
-        message: market.reason || "Market is CLOSED. Live trading is strictly permitted Monday to Friday between 09:15 AM and 03:30 PM IST per the Indian Stock Market calendar."
-      };
-    }
-
     const openPositions = this.positions.filter(p => p.status === "OPEN");
     let count = 0;
     openPositions.forEach(p => {

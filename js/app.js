@@ -539,9 +539,13 @@ class App {
           return;
         }
 
-        const matches = Array.from(STOCKS_MAP.values()).filter(
-          (s) => s.symbol.includes(query) || s.name.toUpperCase().includes(query)
-        );
+        const terms = query.split(/\s+/).filter(Boolean);
+        const matches = Array.from(STOCKS_MAP.values()).filter((s) => {
+          const optType = s.optionType || "";
+          const underlying = s.underlyingSymbol || "";
+          const fullText = `${s.symbol} ${s.name} ${underlying} ${optType} ${s.sector || ""}`.toUpperCase();
+          return terms.every(term => fullText.includes(term));
+        });
 
         resultsOverlay.style.display = "block";
         if (matches.length === 0) {
@@ -550,19 +554,27 @@ class App {
         }
 
         const activeList = store.watchlists[store.activeWatchlist] || [];
-        resultsOverlay.innerHTML = matches.slice(0, 15).map((s) => {
+        resultsOverlay.innerHTML = matches.slice(0, 30).map((s) => {
           const isAdded = activeList.includes(s.symbol);
+          const isPos = (s.change || 0) >= 0;
           return `
-            <div class="search-result-item" onclick="app.toggleWatchlistStock('${s.symbol}')">
-              <div>
-                <span class="font-bold text-dark">${s.symbol}</span>
-                <span class="sector-tag ${s.sectorClass}" style="margin-left:6px;">${s.sector}</span>
-                <span class="exchange-tag" style="margin-left:4px;">${s.exchange}</span>
-                <div style="font-size:11.5px;color:var(--text-secondary);">${s.name}</div>
+            <div class="search-result-item" onclick="app.openStockSheet('${s.symbol}')">
+              <div style="flex:1;min-width:0;padding-right:8px;">
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                  <span class="font-bold text-dark" style="font-size:13px;">${s.symbol}</span>
+                  <span class="sector-tag ${s.sectorClass || 'tag-tech'}">${s.sector || s.exchange}</span>
+                  <span class="exchange-tag">${s.exchange}</span>
+                </div>
+                <div style="font-size:11px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s.name}</div>
               </div>
-              <div style="display:flex;align-items:center;gap:12px;">
-                <span style="font-weight:700;font-size:13.5px;">₹${s.price.toFixed(2)}</span>
-                <button class="btn-secondary" style="padding:4px 9px;font-size:11.5px;">
+              <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                <div style="text-align:right;">
+                  <div style="font-weight:700;font-size:13px;">₹${s.price.toFixed(2)}</div>
+                  <div style="font-size:10.5px;font-weight:600;" class="${isPos ? 'text-green' : 'text-red'}">${isPos ? '+' : ''}${(s.pChange || 0).toFixed(2)}%</div>
+                </div>
+                <button class="act-btn btn-buy-pill" style="width:26px;height:26px;font-size:11px;padding:0;" title="Buy" onclick="event.stopPropagation(); app.openOrderModal('${s.symbol}', 'BUY');">B</button>
+                <button class="act-btn btn-sell-pill" style="width:26px;height:26px;font-size:11px;padding:0;" title="Sell" onclick="event.stopPropagation(); app.openOrderModal('${s.symbol}', 'SELL');">S</button>
+                <button class="btn-secondary" style="padding:4px 8px;font-size:11px;white-space:nowrap;" onclick="event.stopPropagation(); app.toggleWatchlistStock('${s.symbol}')">
                   ${isAdded ? "✓ Added" : "+ Add"}
                 </button>
               </div>

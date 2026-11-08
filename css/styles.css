@@ -3970,6 +3970,55 @@ body.dark-mode .sheet-btn-depth {
   justify-content: center;
 }
 
+/* Search Results Overlay Dropdown (Kite Style) */
+.search-results-overlay {
+  position: absolute;
+  top: calc(100% - 2px);
+  left: 14px;
+  right: 14px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+  max-height: 420px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.search-result-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-color, #f1f5f9);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.search-result-item:hover,
+.search-result-item:active {
+  background: var(--bg-hover, #f8fafc);
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+body.dark-mode .search-results-overlay {
+  background: #1e222d;
+  border-color: #2a2e39;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-mode .search-result-item {
+  border-bottom-color: #2a2e39;
+}
+
+body.dark-mode .search-result-item:hover,
+body.dark-mode .search-result-item:active {
+  background: #252a38;
+}
+
 /* Watchlist Item Row (Exact match to Frames 1-6) */
 .kite-stock-item {
   display: flex;
