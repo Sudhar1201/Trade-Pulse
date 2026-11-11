@@ -776,7 +776,7 @@ class App {
     this.updateNavBadges();
   }
 
-  // --- Order Modal Logic (Supports Equities & Options) ---
+  // --- Order Modal Logic (Supports Equities, Options, & Zerodha Kite Swipe Slider) ---
   setupOrderModal() {
     const modalBackdrop = document.getElementById("orderModalBackdrop");
     const closeBtn = document.getElementById("closeOrderModalBtn");
@@ -791,6 +791,7 @@ class App {
       });
     }
 
+    // Side switcher buttons (BUY / SELL)
     const sideBtns = document.querySelectorAll(".side-toggle-btn");
     sideBtns.forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -799,38 +800,312 @@ class App {
       });
     });
 
-    const productLabels = document.querySelectorAll(".product-radio-label");
-    productLabels.forEach((label) => {
-      label.addEventListener("click", () => {
-        productLabels.forEach((l) => l.classList.remove("selected"));
-        label.classList.add("selected");
-        this.activeProduct = label.getAttribute("data-product");
-        this.recalculateOrderMargin();
-      });
-    });
+    // Exchange selector options (NSE / BSE)
+    const exchangeOpts = document.querySelectorAll(".kite-exchange-opt");
+    exchangeOpts.forEach((opt) => {
+      opt.addEventListener("click", () => {
+        exchangeOpts.forEach((o) => o.classList.remove("active"));
+        opt.classList.add("active");
+        const radio = opt.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+        this.selectedExchange = radio ? radio.value : "NSE";
 
-    const typeTabs = document.querySelectorAll(".order-type-tab");
-    typeTabs.forEach((tab) => {
-      tab.addEventListener("click", () => {
-        typeTabs.forEach((t) => t.classList.remove("active"));
-        tab.classList.add("active");
-        this.activeOrderType = tab.getAttribute("data-type");
-
-        if (priceInput) {
+        // Update price based on exchange selection
+        if (this.selectedStock && priceInput) {
+          const p = (this.selectedExchange === "BSE")
+            ? (this.selectedStock.price + (this.selectedStock.price > 100 ? 0.25 : 0.05))
+            : this.selectedStock.price;
           if (this.activeOrderType === "MARKET") {
-            priceInput.disabled = true;
-            if (this.selectedStock) priceInput.value = this.selectedStock.price.toFixed(2);
-          } else {
-            priceInput.disabled = false;
+            priceInput.value = p.toFixed(2);
           }
         }
         this.recalculateOrderMargin();
       });
     });
 
+    // Variety Subtabs (Regular | Cover | AMO | Iceberg)
+    const varietyTabs = document.querySelectorAll(".kite-variety-tab");
+    varietyTabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        varietyTabs.forEach((t) => t.classList.remove("active"));
+        tab.classList.add("active");
+        this.activeOrderVariety = tab.getAttribute("data-variety") || "REGULAR";
+
+        const amoBanner = document.getElementById("amoNoticeBanner");
+        if (amoBanner) {
+          if (this.activeOrderVariety === "AMO") {
+            amoBanner.style.display = "flex";
+            const textEl = document.getElementById("amoNoticeText");
+            if (textEl) textEl.innerHTML = "Placing <b>AMO (After Market Order)</b> to execute at 09:15 AM on the next market session.";
+          } else {
+            const marketStatus = (typeof engine !== "undefined" && engine && typeof engine.getMarketStatus === "function")
+              ? engine.getMarketStatus()
+              : { isOpen: true };
+            amoBanner.style.display = marketStatus.isOpen ? "none" : "flex";
+          }
+        }
+      });
+    });
+
+    // Quantity Steppers (▲ / ▼)
+    const btnQtyUp = document.getElementById("btnQtyUp");
+    const btnQtyDown = document.getElementById("btnQtyDown");
+    if (btnQtyUp && qtyInput) {
+      btnQtyUp.addEventListener("click", () => {
+        const isOption = !!(this.selectedStock && this.selectedStock.isOption);
+        const step = isOption ? (this.selectedStock.lotSize || 25) : 1;
+        const cur = parseInt(qtyInput.value, 10) || 0;
+        qtyInput.value = cur + step;
+        this.recalculateOrderMargin();
+      });
+    }
+    if (btnQtyDown && qtyInput) {
+      btnQtyDown.addEventListener("click", () => {
+        const isOption = !!(this.selectedStock && this.selectedStock.isOption);
+        const step = isOption ? (this.selectedStock.lotSize || 25) : 1;
+        const cur = parseInt(qtyInput.value, 10) || step;
+        qtyInput.value = Math.max(step, cur - step);
+        this.recalculateOrderMargin();
+      });
+    }
+
+    // Price Pencil Button (Toggles between Limit & Market)
+    const btnTogglePricePencil = document.getElementById("btnTogglePricePencil");
+    if (btnTogglePricePencil && priceInput) {
+      btnTogglePricePencil.addEventListener("click", () => {
+        if (priceInput.disabled) {
+          // Switch to LIMIT mode
+          priceInput.disabled = false;
+          priceInput.focus();
+          priceInput.select();
+          this.activeOrderType = "LIMIT";
+          document.querySelectorAll(".kite-type-pill, .order-type-tab").forEach((t) => {
+            t.classList.toggle("active", t.getAttribute("data-type") === "LIMIT");
+          });
+          const badge = document.getElementById("orderMarketBadge");
+          if (badge) badge.textContent = "Limit";
+        } else {
+          // Switch back to MARKET mode
+          priceInput.disabled = true;
+          this.activeOrderType = "MARKET";
+          if (this.selectedStock) {
+            priceInput.value = this.selectedStock.price.toFixed(2);
+          }
+          document.querySelectorAll(".kite-type-pill, .order-type-tab").forEach((t) => {
+            t.classList.toggle("active", t.getAttribute("data-type") === "MARKET");
+          });
+          const badge = document.getElementById("orderMarketBadge");
+          if (badge) badge.textContent = "LTP";
+        }
+        this.recalculateOrderMargin();
+      });
+    }
+
+    // Price Steppers (▲ / ▼)
+    const btnPriceUp = document.getElementById("btnPriceUp");
+    const btnPriceDown = document.getElementById("btnPriceDown");
+    if (btnPriceUp && priceInput) {
+      btnPriceUp.addEventListener("click", () => {
+        priceInput.disabled = false;
+        this.activeOrderType = "LIMIT";
+        document.querySelectorAll(".kite-type-pill, .order-type-tab").forEach((t) => {
+          t.classList.toggle("active", t.getAttribute("data-type") === "LIMIT");
+        });
+        const badge = document.getElementById("orderMarketBadge");
+        if (badge) badge.textContent = "Limit";
+        const cur = parseFloat(priceInput.value) || (this.selectedStock ? this.selectedStock.price : 100);
+        priceInput.value = (cur + 0.05).toFixed(2);
+        this.recalculateOrderMargin();
+      });
+    }
+    if (btnPriceDown && priceInput) {
+      btnPriceDown.addEventListener("click", () => {
+        priceInput.disabled = false;
+        this.activeOrderType = "LIMIT";
+        document.querySelectorAll(".kite-type-pill, .order-type-tab").forEach((t) => {
+          t.classList.toggle("active", t.getAttribute("data-type") === "LIMIT");
+        });
+        const badge = document.getElementById("orderMarketBadge");
+        if (badge) badge.textContent = "Limit";
+        const cur = parseFloat(priceInput.value) || (this.selectedStock ? this.selectedStock.price : 100);
+        priceInput.value = Math.max(0.05, cur - 0.05).toFixed(2);
+        this.recalculateOrderMargin();
+      });
+    }
+
+    // Product Selection Radios (MIS vs CNC)
+    const productLabels = document.querySelectorAll(".product-radio-label");
+    productLabels.forEach((label) => {
+      label.addEventListener("click", () => {
+        productLabels.forEach((l) => l.classList.remove("selected"));
+        label.classList.add("selected");
+        const radio = label.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+        this.activeProduct = label.getAttribute("data-product") || "CNC";
+        this.recalculateOrderMargin();
+      });
+    });
+
+    // Order Type Segmented Pills (Market | Limit | SL | SL-M)
+    const typeTabs = document.querySelectorAll(".order-type-tab, .kite-type-pill");
+    typeTabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        typeTabs.forEach((t) => t.classList.remove("active"));
+        tab.classList.add("active");
+        this.activeOrderType = tab.getAttribute("data-type") || "MARKET";
+
+        const badge = document.getElementById("orderMarketBadge");
+        if (priceInput) {
+          if (this.activeOrderType === "MARKET") {
+            priceInput.disabled = true;
+            if (this.selectedStock) priceInput.value = this.selectedStock.price.toFixed(2);
+            if (badge) badge.textContent = "LTP";
+          } else {
+            priceInput.disabled = false;
+            if (badge) badge.textContent = "Limit";
+          }
+        }
+        this.recalculateOrderMargin();
+      });
+    });
+
+    // Margin Refresh Circular Button
+    const refreshMarginBtn = document.getElementById("orderRefreshMarginBtn");
+    if (refreshMarginBtn) {
+      refreshMarginBtn.addEventListener("click", () => {
+        refreshMarginBtn.classList.add("spinning");
+        setTimeout(() => refreshMarginBtn.classList.remove("spinning"), 600);
+        if (this.selectedStock && this.activeOrderType === "MARKET" && priceInput) {
+          priceInput.value = this.selectedStock.price.toFixed(2);
+        }
+        this.recalculateOrderMargin();
+      });
+    }
+
+    // Advanced Details Accordion Toggle
+    const btnToggleAdvanced = document.getElementById("btnToggleAdvanced");
+    const advancedContent = document.getElementById("kiteAdvancedContent");
+    if (btnToggleAdvanced && advancedContent) {
+      btnToggleAdvanced.addEventListener("click", () => {
+        const isHidden = advancedContent.style.display === "none";
+        advancedContent.style.display = isHidden ? "flex" : "none";
+      });
+    }
+
     if (qtyInput) qtyInput.addEventListener("input", () => this.recalculateOrderMargin());
     if (priceInput) priceInput.addEventListener("input", () => this.recalculateOrderMargin());
     if (submitBtn) submitBtn.addEventListener("click", () => this.handleOrderSubmit());
+
+    // Initialize the Swipe Slider
+    this.setupOrderSwipeSlider();
+  }
+
+  // Authentic Zerodha Swipe Slider (Supports Touch Drag, Mouse Drag, & Click Fallback)
+  setupOrderSwipeSlider() {
+    const track = document.getElementById("orderSwipeTrack");
+    const thumb = document.getElementById("orderSwipeThumb");
+    const text = document.getElementById("orderSwipeText");
+    if (!track || !thumb || !text) return;
+
+    let isDragging = false;
+    let startX = 0;
+    let currentX = 0;
+    let maxDrag = 0;
+
+    const calcMaxDrag = () => Math.max(10, track.clientWidth - thumb.clientWidth - 8);
+
+    const startDrag = (clientX) => {
+      isDragging = true;
+      startX = clientX;
+      currentX = 0;
+      maxDrag = calcMaxDrag();
+      thumb.classList.add("dragging");
+    };
+
+    const moveDrag = (clientX) => {
+      if (!isDragging) return;
+      const diff = clientX - startX;
+      currentX = Math.max(0, Math.min(diff, maxDrag));
+      thumb.style.transform = `translateX(${currentX}px)`;
+      const progress = currentX / maxDrag;
+      text.style.opacity = Math.max(0, 1 - progress * 1.6).toString();
+    };
+
+    const endDrag = () => {
+      if (!isDragging) return;
+      isDragging = false;
+      thumb.classList.remove("dragging");
+
+      if (currentX >= maxDrag * 0.50) {
+        // Successfully swiped past threshold
+        thumb.style.transform = `translateX(${maxDrag}px)`;
+        text.style.opacity = "0";
+        setTimeout(() => {
+          this.handleOrderSubmit();
+          setTimeout(() => this.resetSwipeSlider(), 400);
+        }, 120);
+      } else {
+        // Snap back to start smoothly
+        thumb.style.transform = "translateX(0px)";
+        text.style.opacity = "1";
+      }
+      currentX = 0;
+    };
+
+    // Mobile touch events
+    track.addEventListener("touchstart", (e) => {
+      if (e.touches && e.touches[0]) {
+        startDrag(e.touches[0].clientX);
+      }
+    }, { passive: true });
+
+    window.addEventListener("touchmove", (e) => {
+      if (isDragging && e.touches && e.touches[0]) {
+        moveDrag(e.touches[0].clientX);
+      }
+    }, { passive: true });
+
+    window.addEventListener("touchend", () => {
+      if (isDragging) endDrag();
+    });
+
+    // Desktop mouse events
+    thumb.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      startDrag(e.clientX);
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (isDragging) moveDrag(e.clientX);
+    });
+
+    window.addEventListener("mouseup", () => {
+      if (isDragging) endDrag();
+    });
+
+    // Instant click / tap trigger fallback
+    track.addEventListener("click", () => {
+      if (currentX > 6) return; // ignore if was an intentional drag
+      maxDrag = calcMaxDrag();
+      thumb.style.transform = `translateX(${maxDrag}px)`;
+      text.style.opacity = "0";
+      setTimeout(() => {
+        this.handleOrderSubmit();
+        setTimeout(() => this.resetSwipeSlider(), 400);
+      }, 160);
+    });
+  }
+
+  resetSwipeSlider() {
+    const thumb = document.getElementById("orderSwipeThumb");
+    const text = document.getElementById("orderSwipeText");
+    if (thumb) {
+      thumb.classList.remove("dragging");
+      thumb.style.transform = "translateX(0px)";
+    }
+    if (text) {
+      text.style.opacity = "1";
+    }
   }
 
   openOrderModal(symbol, side = "BUY") {
@@ -838,10 +1113,14 @@ class App {
     if (!stock) return;
     this.selectedStock = stock;
     this.activeOrderSide = side;
+    this.activeOrderVariety = "REGULAR";
+    this.selectedExchange = "NSE";
 
     const modal = document.getElementById("orderModalBackdrop");
     const symbolEl = document.getElementById("modalStockSymbol");
-    const priceEl = document.getElementById("modalStockLTP");
+    const subtagEl = document.getElementById("modalStockSubtag");
+    const ltpNseEl = document.getElementById("orderLtpNSE");
+    const ltpBseEl = document.getElementById("orderLtpBSE");
     const qtyInput = document.getElementById("orderQtyInput");
     const priceInput = document.getElementById("orderPriceInput");
     const lotHint = document.getElementById("orderLotSizeHint");
@@ -851,15 +1130,47 @@ class App {
     const isOption = !!stock.isOption;
     const defaultQty = isOption ? (stock.lotSize || 25) : 1;
 
+    // Reset variety tabs
+    document.querySelectorAll(".kite-variety-tab").forEach((t) => {
+      t.classList.toggle("active", t.getAttribute("data-variety") === "REGULAR");
+    });
+
+    // Reset order types to Market
+    this.activeOrderType = "MARKET";
+    document.querySelectorAll(".kite-type-pill, .order-type-tab").forEach((t) => {
+      t.classList.toggle("active", t.getAttribute("data-type") === "MARKET");
+    });
+    if (priceInput) priceInput.disabled = true;
+    const badge = document.getElementById("orderMarketBadge");
+    if (badge) badge.textContent = "LTP";
+
+    // Symbol and Subtag
     if (symbolEl) {
-      symbolEl.innerHTML = `
-        ${stock.symbol}
-        ${isOption ? `<span class="badge-tag ${stock.optionType === 'CE' ? 'badge-ce' : 'badge-pe'}">${stock.optionType}</span>` : ''}
-        <span class="exchange-tag">${stock.exchange}</span>
-      `;
+      symbolEl.textContent = stock.symbol;
+    }
+    if (subtagEl) {
+      if (isOption) {
+        subtagEl.style.display = "inline-block";
+        subtagEl.textContent = stock.optionType;
+        subtagEl.className = `kite-order-subtag badge-tag ${stock.optionType === "CE" ? "badge-ce" : "badge-pe"}`;
+      } else {
+        subtagEl.style.display = "none";
+      }
     }
 
-    if (priceEl) priceEl.textContent = `LTP: ₹${stock.price.toFixed(2)}`;
+    // Exchange bar prices (NSE & realistic BSE)
+    const nsePrice = stock.price;
+    const bsePrice = stock.price + (stock.price > 100 ? 0.25 : 0.05);
+    if (ltpNseEl) ltpNseEl.textContent = `₹${nsePrice.toFixed(2)}`;
+    if (ltpBseEl) ltpBseEl.textContent = `₹${bsePrice.toFixed(2)}`;
+
+    // Reset exchange radio to NSE
+    const nseRadio = document.querySelector('input[name="orderExchange"][value="NSE"]');
+    if (nseRadio) nseRadio.checked = true;
+    document.querySelectorAll(".kite-exchange-opt").forEach((o) => {
+      o.classList.toggle("active", o.id === "exchangeOptNSE");
+    });
+
     if (qtyInput) {
       qtyInput.value = defaultQty;
       qtyInput.step = isOption ? (stock.lotSize || 25) : 1;
@@ -868,8 +1179,8 @@ class App {
 
     if (lotHint) {
       if (isOption) {
-        lotHint.style.display = "block";
-        lotHint.textContent = `1 Lot = ${stock.lotSize} Qty (Underlying: ${stock.underlyingSymbol})`;
+        lotHint.style.display = "inline-block";
+        lotHint.textContent = `Lot size ${stock.lotSize}`;
       } else {
         lotHint.style.display = "none";
       }
@@ -877,15 +1188,15 @@ class App {
 
     if (productCNCLabel) {
       productCNCLabel.innerHTML = isOption
-        ? `NRML <span style="font-size:10.5px;color:var(--text-muted);">(Overnight)</span>`
-        : `CNC <span style="font-size:10.5px;color:var(--text-muted);">(Longterm)</span>`;
+        ? `Overnight <span class="kite-subtext">NRML</span>`
+        : `Longterm <span class="kite-subtext">CNC</span>`;
     }
 
     if (marginNeededText) {
-      marginNeededText.textContent = isOption ? "Premium req:" : "Margin req:";
+      marginNeededText.textContent = isOption ? "Premium" : "Amount";
     }
 
-    if (priceInput) priceInput.value = stock.price.toFixed(2);
+    if (priceInput) priceInput.value = nsePrice.toFixed(2);
 
     // If selling, pre-fill with held quantity and matching product
     if (side === "SELL") {
@@ -904,8 +1215,14 @@ class App {
           l.classList.toggle("selected", l.getAttribute("data-product") === existingPos.product);
         });
       }
+    } else {
+      this.activeProduct = "CNC";
+      document.querySelectorAll(".product-radio-label").forEach((l) => {
+        l.classList.toggle("selected", l.getAttribute("data-product") === "CNC");
+      });
     }
 
+    // Check market status
     const marketStatus = (typeof engine !== "undefined" && engine && typeof engine.getMarketStatus === "function")
       ? engine.getMarketStatus()
       : { isOpen: true };
@@ -915,18 +1232,14 @@ class App {
         amoBanner.style.display = "none";
       } else {
         amoBanner.style.display = "flex";
-        amoBanner.innerHTML = `
-          <div style="display:flex;align-items:flex-start;gap:8px;">
-            <span style="font-size:18px;line-height:1;">🛑</span>
-            <div>
-              <div style="font-weight:700;color:#ef4444;margin-bottom:2px;">Market is CLOSED today (${marketStatus.dayName || 'Weekend'})</div>
-              <div style="font-size:11.5px;color:var(--text-secondary);line-height:1.4;">${marketStatus.reason || "Live trading is strictly permitted Monday to Friday between 09:15 AM and 03:30 PM IST per the Indian Stock Market calendar."}</div>
-            </div>
-          </div>
-        `;
+        const textEl = document.getElementById("amoNoticeText");
+        if (textEl) {
+          textEl.innerHTML = `Market is closed (${marketStatus.dayName || 'Weekend'}). Placing <b>AMO (After Market Order)</b> to execute at 09:15 AM.`;
+        }
       }
     }
 
+    this.resetSwipeSlider();
     this.setOrderSide(side);
     this.recalculateOrderMargin();
 
@@ -940,16 +1253,22 @@ class App {
 
   setOrderSide(side) {
     this.activeOrderSide = side;
-    const header = document.getElementById("orderModalHeader");
+    const modalCard = document.getElementById("orderModalCard");
     const submitBtn = document.getElementById("submitOrderBtn");
-    const sideBtns = document.querySelectorAll(".side-toggle-btn");
+    const swipeText = document.getElementById("orderSwipeText");
+    const btnBuy = document.getElementById("btnSideBuy");
+    const btnSell = document.getElementById("btnSideSell");
 
-    sideBtns.forEach((b) => {
-      b.classList.toggle("active", b.getAttribute("data-side") === side);
-    });
+    if (modalCard) {
+      modalCard.classList.toggle("buy-theme", side === "BUY");
+      modalCard.classList.toggle("sell-theme", side === "SELL");
+    }
 
-    if (header) {
-      header.className = `order-modal-header ${side === "BUY" ? "buy-theme" : "sell-theme"}`;
+    if (btnBuy) btnBuy.classList.toggle("active", side === "BUY");
+    if (btnSell) btnSell.classList.toggle("active", side === "SELL");
+
+    if (swipeText) {
+      swipeText.textContent = side === "BUY" ? "SWIPE TO BUY" : "SWIPE TO SELL";
     }
 
     if (submitBtn) {
@@ -965,6 +1284,7 @@ class App {
     const priceInput = document.getElementById("orderPriceInput");
     const marginNeededEl = document.getElementById("marginRequiredVal");
     const marginAvailEl = document.getElementById("marginAvailableVal");
+    const chargesEl = document.getElementById("orderChargesVal");
     const submitBtn = document.getElementById("submitOrderBtn");
 
     const qty = parseInt(qtyInput?.value, 10) || 0;
@@ -981,21 +1301,20 @@ class App {
       }
     }
 
-    if (marginAvailEl) {
-      marginAvailEl.textContent = `₹${available.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+    if (chargesEl) {
+      let charges = 0.97;
+      if (isOption) {
+        charges = 20.00 + (marginReq * 0.0006);
+      } else if (this.activeProduct === "MIS") {
+        charges = Math.min(20, marginReq * 0.0003) + 1.25;
+      } else {
+        charges = Math.max(0.97, marginReq * 0.00015);
+      }
+      chargesEl.textContent = `Charges ₹${charges.toFixed(2)}`;
     }
 
-    const marketStatus = (typeof engine !== "undefined" && engine && typeof engine.getMarketStatus === "function")
-      ? engine.getMarketStatus()
-      : { isOpen: true };
-
-    if (!marketStatus.isOpen && submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.style.opacity = "0.55";
-      submitBtn.style.cursor = "not-allowed";
-      submitBtn.textContent = `Market Closed (${marketStatus.statusText})`;
-      submitBtn.title = marketStatus.reason || "Trading is closed";
-      return;
+    if (marginAvailEl) {
+      marginAvailEl.textContent = `₹${available.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
     }
 
     if (submitBtn && this.activeOrderSide === "BUY") {
@@ -1015,21 +1334,13 @@ class App {
   }
 
   handleOrderSubmit() {
-    const marketStatus = (typeof engine !== "undefined" && engine && typeof engine.getMarketStatus === "function")
-      ? engine.getMarketStatus()
-      : { isOpen: true };
-
-    if (!marketStatus.isOpen) {
-      if (typeof sounds !== "undefined" && sounds.playError) sounds.playError();
-      window.showToast(marketStatus.reason || "Market is CLOSED. Live trading is strictly permitted Monday to Friday between 09:15 AM and 03:30 PM IST per the Indian Stock Market calendar.", "error");
-      return;
-    }
+    if (!this.selectedStock) return;
 
     const qtyInput = document.getElementById("orderQtyInput");
     const priceInput = document.getElementById("orderPriceInput");
 
     const quantity = parseInt(qtyInput?.value, 10);
-    const price = parseFloat(priceInput?.value);
+    const price = parseFloat(priceInput?.value) || this.selectedStock.price;
 
     const result = store.placeOrder({
       symbol: this.selectedStock.symbol,
@@ -1041,20 +1352,20 @@ class App {
     });
 
     if (result.success) {
-      window.playChime();
-      window.showToast(result.message, "success");
+      if (typeof window.playChime === "function") window.playChime();
+      if (typeof window.showToast === "function") window.showToast(result.message, "success");
       this.closeOrderModal();
       this.renderUserQuickFunds();
 
-      // On mobile screen, automatically navigate to Positions tab (all today's trades are intraday in Positions!)
+      // On mobile screen, automatically navigate to Positions tab (all today's trades are in Positions!)
       if (window.innerWidth <= 768) {
         this.switchMobileTab("portfolio");
         this.switchView("positions");
       }
       this.renderActiveView();
     } else {
-      sounds.playError();
-      window.showToast(result.message, "error");
+      if (typeof sounds !== "undefined" && sounds.playError) sounds.playError();
+      if (typeof window.showToast === "function") window.showToast(result.message, "error");
     }
   }
 

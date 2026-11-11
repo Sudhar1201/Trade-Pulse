@@ -1014,6 +1014,858 @@ body {
   border: 1px solid var(--border-color);
 }
 
+/* ==========================================================================
+   AUTHENTIC ZERODHA KITE ORDER WINDOW & SWIPE SLIDER
+   ========================================================================== */
+.kite-order-window {
+  --kite-buy: #2870ed;
+  --kite-buy-light: rgba(40, 112, 237, 0.08);
+  --kite-buy-shadow: rgba(40, 112, 237, 0.32);
+  --kite-sell: #eb5b3c;
+  --kite-sell-light: rgba(235, 91, 60, 0.08);
+  --kite-sell-shadow: rgba(235, 91, 60, 0.32);
+
+  --kite-accent: var(--kite-buy);
+  --kite-accent-light: var(--kite-buy-light);
+  --kite-accent-shadow: var(--kite-buy-shadow);
+
+  width: 450px;
+  max-width: 96vw;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.22);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #e6e9ef;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  transition: all 0.2s ease;
+}
+
+.kite-order-window.buy-theme {
+  --kite-accent: var(--kite-buy);
+  --kite-accent-light: var(--kite-buy-light);
+  --kite-accent-shadow: var(--kite-buy-shadow);
+}
+
+.kite-order-window.sell-theme {
+  --kite-accent: var(--kite-sell);
+  --kite-accent-light: var(--kite-sell-light);
+  --kite-accent-shadow: var(--kite-sell-shadow);
+}
+
+/* Kite Order Header */
+.kite-order-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #eef1f6;
+  gap: 12px;
+}
+
+.kite-order-back-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #1e293b;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.15s;
+}
+
+.kite-order-back-btn:hover {
+  background: #f1f5f9;
+}
+
+.kite-order-title-box {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kite-order-symbol {
+  font-size: 17px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kite-order-subtag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.kite-side-switch-wrap {
+  display: flex;
+  background: #f1f4f8;
+  border-radius: 20px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.kite-side-pill {
+  border: none;
+  background: transparent;
+  padding: 4px 12px;
+  font-size: 11.5px;
+  font-weight: 800;
+  border-radius: 16px;
+  cursor: pointer;
+  color: #64748b;
+  transition: all 0.15s ease;
+}
+
+.buy-theme .kite-side-pill[data-side="BUY"].active {
+  background: #2870ed;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(40, 112, 237, 0.35);
+}
+
+.sell-theme .kite-side-pill[data-side="SELL"].active {
+  background: #eb5b3c;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(235, 91, 60, 0.35);
+}
+
+.kite-order-menu-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  border-radius: 50%;
+}
+
+/* Exchange Selector Bar */
+.kite-exchange-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 8px 16px;
+  background: #f5f7fa;
+  border-bottom: 1px solid #eaedf3;
+}
+
+.kite-exchange-opt {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  font-size: 13px;
+  user-select: none;
+}
+
+.kite-exchange-opt input {
+  display: none;
+}
+
+.kite-radio-dot {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1.6px solid #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: border-color 0.15s;
+}
+
+.kite-exchange-opt.active .kite-radio-dot {
+  border-color: var(--kite-accent);
+}
+
+.kite-exchange-opt.active .kite-radio-dot::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--kite-accent);
+}
+
+.kite-exchange-name {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.kite-exchange-price {
+  font-weight: 600;
+  color: #334155;
+}
+
+/* Variety Subtabs (Regular | Cover | AMO | Iceberg) */
+.kite-variety-tabs {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 18px 8px 18px;
+  border-bottom: 1px solid #eef1f6;
+  background: #ffffff;
+}
+
+.kite-variety-tab {
+  border: none;
+  background: transparent;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0 0 8px 0;
+  position: relative;
+  transition: color 0.15s;
+}
+
+.kite-variety-tab.active {
+  color: var(--kite-accent);
+  font-weight: 700;
+}
+
+.kite-variety-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2.5px;
+  background: var(--kite-accent);
+  border-radius: 2px;
+}
+
+/* Scrollable Form Body */
+.kite-order-body {
+  padding: 14px 16px;
+  max-height: calc(88vh - 200px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: #ffffff;
+}
+
+/* Main Input Card */
+.kite-input-card {
+  background: #ffffff;
+  border: 1.5px solid #e5e9f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.kite-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.kite-field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.kite-field-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.kite-lot-hint {
+  font-size: 11px;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.kite-price-label-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kite-pencil-btn {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  color: var(--kite-accent);
+  display: flex;
+  align-items: center;
+}
+
+.kite-market-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.kite-input-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background: #ffffff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.kite-input-box:focus-within {
+  border-color: var(--kite-accent);
+  box-shadow: 0 0 0 3px var(--kite-accent-light);
+}
+
+.kite-num-input {
+  flex: 1;
+  height: 44px;
+  border: none;
+  background: transparent;
+  padding: 0 12px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  outline: none;
+  -moz-appearance: textfield;
+}
+
+.kite-num-input::-webkit-outer-spin-button,
+.kite-num-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.kite-stepper-icons {
+  display: flex;
+  flex-direction: column;
+  padding-right: 8px;
+}
+
+.kite-stepper-btn {
+  border: none;
+  background: none;
+  font-size: 9px;
+  line-height: 12px;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px 4px;
+  transition: color 0.12s;
+}
+
+.kite-stepper-btn:hover {
+  color: var(--kite-accent);
+}
+
+/* Product Radios (Intraday vs Longterm) */
+.kite-product-radios {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f4f9;
+  margin-top: 4px;
+  margin-bottom: 0 !important;
+}
+
+.kite-product-radio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 6px !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+.kite-product-radio input {
+  display: none;
+}
+
+.kite-custom-radio {
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  border: 1.8px solid #cbd5e1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s;
+}
+
+.kite-product-radio.selected .kite-custom-radio {
+  border-color: var(--kite-accent);
+}
+
+.kite-product-radio.selected .kite-custom-radio::after {
+  content: '';
+  width: 8.5px;
+  height: 8.5px;
+  border-radius: 50%;
+  background: var(--kite-accent);
+}
+
+.kite-product-text {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.kite-subtext {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-left: 2px;
+}
+
+/* Order Types (Market | Limit | SL | SL-M) */
+.kite-order-types {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border-bottom: none !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 2px !important;
+}
+
+.kite-type-pill {
+  flex: 1;
+  height: 34px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  border-radius: 18px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kite-type-pill.active {
+  background: var(--kite-accent);
+  border-color: var(--kite-accent);
+  color: #ffffff;
+  box-shadow: 0 2px 8px var(--kite-accent-shadow);
+}
+
+/* Stoploss and GTT Switches */
+.kite-toggle-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.kite-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.kite-toggle-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kite-toggle-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.kite-info-icon {
+  font-size: 13px;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.kite-switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+}
+
+.kite-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.kite-slider-switch {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: .2s;
+  border-radius: 22px;
+}
+
+.kite-slider-switch::before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .2s;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+
+.kite-switch input:checked + .kite-slider-switch {
+  background-color: var(--kite-accent);
+}
+
+.kite-switch input:checked + .kite-slider-switch::before {
+  transform: translateX(18px);
+}
+
+/* Tags and Advanced */
+.kite-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 2px;
+}
+
+.kite-tags-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--kite-accent);
+  cursor: pointer;
+}
+
+.kite-advanced-toggle {
+  border: none;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.kite-advanced-content {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+  color: #475569;
+}
+
+.kite-adv-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.kite-adv-val {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* Sticky Kite Order Footer */
+.kite-order-footer {
+  background: #ffffff;
+  border-top: 1px solid #eef1f6;
+  padding: 12px 16px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.kite-margin-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.kite-margin-left {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.kite-summary-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.kite-summary-amt {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.kite-summary-sep {
+  color: #cbd5e1;
+}
+
+.kite-summary-charges {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.kite-refresh-margin-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #64748b;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, color 0.15s;
+}
+
+.kite-refresh-margin-btn:hover {
+  color: var(--kite-accent);
+}
+
+.kite-refresh-margin-btn.spinning svg {
+  animation: kiteSpinRefresh 0.6s ease-in-out;
+}
+
+@keyframes kiteSpinRefresh {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.kite-avail-margin-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.kite-avail-val {
+  color: #1e293b;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   THE ICONIC ZERODHA SWIPE SLIDER BUTTON
+   ========================================================================== */
+.kite-swipe-container {
+  width: 100%;
+  padding-top: 4px;
+}
+
+.kite-swipe-track {
+  position: relative;
+  width: 100%;
+  height: 52px;
+  border-radius: 26px;
+  background: var(--kite-accent);
+  box-shadow: 0 4px 16px var(--kite-accent-shadow);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kite-swipe-thumb {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--kite-accent);
+  cursor: grab;
+  z-index: 2;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease;
+  will-change: transform;
+}
+
+.kite-swipe-thumb.dragging {
+  transition: none !important;
+  cursor: grabbing;
+}
+
+.kite-swipe-text {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  user-select: none;
+  pointer-events: none;
+  z-index: 1;
+  transition: opacity 0.1s ease;
+}
+
+/* Dark Mode Overrides for Kite Order Window */
+body.dark-mode .kite-order-window {
+  background: #131722;
+  border-color: #242938;
+}
+
+body.dark-mode .kite-order-header {
+  background: #131722;
+  border-color: #1e2434;
+}
+
+body.dark-mode .kite-order-back-btn {
+  color: #f1f5f9;
+}
+
+body.dark-mode .kite-order-symbol {
+  color: #f8fafc;
+}
+
+body.dark-mode .kite-side-switch-wrap {
+  background: #1c2233;
+}
+
+body.dark-mode .kite-exchange-bar {
+  background: #181d2c;
+  border-color: #22293b;
+}
+
+body.dark-mode .kite-exchange-name {
+  color: #f1f5f9;
+}
+
+body.dark-mode .kite-exchange-price {
+  color: #94a3b8;
+}
+
+body.dark-mode .kite-variety-tabs {
+  background: #131722;
+  border-color: #1e2434;
+}
+
+body.dark-mode .kite-order-body {
+  background: #131722;
+}
+
+body.dark-mode .kite-input-card {
+  background: #181d2c;
+  border-color: #262e42;
+}
+
+body.dark-mode .kite-field-label {
+  color: #94a3b8;
+}
+
+body.dark-mode .kite-lot-hint,
+body.dark-mode .kite-market-badge {
+  background: #242c3f;
+  color: #94a3b8;
+}
+
+body.dark-mode .kite-input-box {
+  background: #131722;
+  border-color: #2a3449;
+}
+
+body.dark-mode .kite-num-input {
+  color: #f1f5f9;
+}
+
+body.dark-mode .kite-product-radios {
+  border-color: #22293b;
+}
+
+body.dark-mode .kite-product-text {
+  color: #f1f5f9;
+}
+
+body.dark-mode .kite-type-pill {
+  background: #181d2c;
+  border-color: #2a3449;
+  color: #cbd5e1;
+}
+
+body.dark-mode .kite-toggle-title {
+  color: #f1f5f9;
+}
+
+body.dark-mode .kite-slider-switch {
+  background-color: #334155;
+}
+
+body.dark-mode .kite-advanced-content {
+  background: #181d2c;
+  color: #94a3b8;
+}
+
+body.dark-mode .kite-adv-val {
+  color: #f1f5f9;
+}
+
+body.dark-mode .kite-order-footer {
+  background: #131722;
+  border-color: #1e2434;
+}
+
+body.dark-mode .kite-summary-amt {
+  color: #f8fafc;
+}
+
+body.dark-mode .kite-avail-val {
+  color: #f1f5f9;
+}
+
 @keyframes modalScale {
   from { opacity: 0; transform: scale(0.96); }
   to { opacity: 1; transform: scale(1); }
@@ -3242,7 +4094,8 @@ body.dark-mode .sheet-btn-depth {
   }
 
   /* 8. ORDER MODAL ON MOBILE (Slides up from bottom as Zerodha Sheet) */
-  .order-modal {
+  .order-modal,
+  .order-modal.kite-order-window {
     width: 100% !important;
     max-width: 100% !important;
     position: fixed !important;
@@ -3250,23 +4103,25 @@ body.dark-mode .sheet-btn-depth {
     left: 0 !important;
     right: 0 !important;
     border-radius: 20px 20px 0 0 !important;
-    max-height: 88vh !important;
-    max-height: 88dvh !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
+    max-height: 94vh !important;
+    max-height: 94dvh !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
     animation: slideUpSheet 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
   }
 
-  .order-modal-header {
-    padding: 14px 18px !important;
+  .kite-order-window .kite-order-body {
+    max-height: none !important;
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 20px !important;
   }
 
-  .order-modal-body {
-    padding: 14px 18px !important;
-  }
-
-  .order-modal-footer {
-    padding: 12px 18px !important;
+  .kite-order-window .kite-order-footer {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important;
+    flex-shrink: 0 !important;
   }
 
   /* 9. MARKET DEPTH MODAL ON MOBILE */
