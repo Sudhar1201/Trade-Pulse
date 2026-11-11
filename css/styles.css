@@ -1021,9 +1021,9 @@ body {
   --kite-buy: #2870ed;
   --kite-buy-light: rgba(40, 112, 237, 0.08);
   --kite-buy-shadow: rgba(40, 112, 237, 0.32);
-  --kite-sell: #eb5b3c;
-  --kite-sell-light: rgba(235, 91, 60, 0.08);
-  --kite-sell-shadow: rgba(235, 91, 60, 0.32);
+  --kite-sell: #e5533c;
+  --kite-sell-light: rgba(229, 83, 60, 0.08);
+  --kite-sell-shadow: rgba(229, 83, 60, 0.32);
 
   --kite-accent: var(--kite-buy);
   --kite-accent-light: var(--kite-buy-light);
@@ -1059,7 +1059,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 13px 16px;
+  padding: 14px 16px;
   background: #ffffff;
   border-bottom: 1px solid #eef1f6;
   gap: 12px;
@@ -1091,7 +1091,7 @@ body {
 }
 
 .kite-order-symbol {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 800;
   color: #0f172a;
   letter-spacing: -0.2px;
@@ -1105,38 +1105,6 @@ body {
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 4px;
-}
-
-.kite-side-switch-wrap {
-  display: flex;
-  background: #f1f4f8;
-  border-radius: 20px;
-  padding: 2px;
-  gap: 2px;
-}
-
-.kite-side-pill {
-  border: none;
-  background: transparent;
-  padding: 4px 12px;
-  font-size: 11.5px;
-  font-weight: 800;
-  border-radius: 16px;
-  cursor: pointer;
-  color: #64748b;
-  transition: all 0.15s ease;
-}
-
-.buy-theme .kite-side-pill[data-side="BUY"].active {
-  background: #2870ed;
-  color: #ffffff;
-  box-shadow: 0 2px 6px rgba(40, 112, 237, 0.35);
-}
-
-.sell-theme .kite-side-pill[data-side="SELL"].active {
-  background: #eb5b3c;
-  color: #ffffff;
-  box-shadow: 0 2px 6px rgba(235, 91, 60, 0.35);
 }
 
 .kite-order-menu-btn {
@@ -1155,8 +1123,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 28px;
-  padding: 8px 16px;
+  gap: 32px;
+  padding: 9px 16px;
   background: #f5f7fa;
   border-bottom: 1px solid #eaedf3;
 }
@@ -1166,7 +1134,7 @@ body {
   align-items: center;
   gap: 7px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 13.5px;
   user-select: none;
 }
 
@@ -1199,21 +1167,21 @@ body {
 }
 
 .kite-exchange-name {
-  font-weight: 700;
-  color: #1e293b;
+  font-weight: 600;
+  color: #374151;
 }
 
 .kite-exchange-price {
   font-weight: 600;
-  color: #334155;
+  color: #1f2937;
 }
 
-/* Variety Subtabs (Regular | Cover | AMO | Iceberg) */
+/* Variety Subtabs (Regular | MTF | AMO | Iceberg) */
 .kite-variety-tabs {
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 12px 18px 8px 18px;
+  gap: 24px;
+  padding: 13px 20px 8px 20px;
   border-bottom: 1px solid #eef1f6;
   background: #ffffff;
 }
@@ -1221,9 +1189,9 @@ body {
 .kite-variety-tab {
   border: none;
   background: transparent;
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 600;
-  color: #64748b;
+  color: #9ca3af;
   cursor: pointer;
   padding: 0 0 8px 0;
   position: relative;
@@ -1254,7 +1222,7 @@ body {
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   background: #ffffff;
 }
 
@@ -1281,9 +1249,9 @@ body {
 }
 
 .kite-field-label {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
-  color: #475569;
+  color: #374151;
 }
 
 .kite-lot-hint {
@@ -1308,15 +1276,6 @@ body {
   color: var(--kite-accent);
   display: flex;
   align-items: center;
-}
-
-.kite-market-badge {
-  font-size: 10.5px;
-  font-weight: 700;
-  color: #64748b;
-  background: #f1f5f9;
-  padding: 2px 6px;
-  border-radius: 4px;
 }
 
 .kite-input-box {
@@ -1353,25 +1312,19 @@ body {
   margin: 0;
 }
 
-.kite-stepper-icons {
+/* Signature Two-Way Horizontal Stepper Icon (⇄) in Kite Accent Color */
+.kite-stepper-icon-box {
   display: flex;
-  flex-direction: column;
-  padding-right: 8px;
-}
-
-.kite-stepper-btn {
-  border: none;
-  background: none;
-  font-size: 9px;
-  line-height: 12px;
-  color: #94a3b8;
-  cursor: pointer;
-  padding: 2px 4px;
-  transition: color 0.12s;
-}
-
-.kite-stepper-btn:hover {
+  align-items: center;
+  justify-content: center;
+  padding-right: 12px;
   color: var(--kite-accent);
+  cursor: pointer;
+  transition: transform 0.12s;
+}
+
+.kite-stepper-icon-box:active {
+  transform: scale(0.92);
 }
 
 /* Product Radios (Intraday vs Longterm) */
@@ -1425,16 +1378,36 @@ body {
 }
 
 .kite-product-text {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: #1e293b;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
 }
 
-.kite-subtext {
-  font-size: 11px;
-  font-weight: 600;
-  color: #94a3b8;
-  margin-left: 2px;
+/* "More ∨" Accordion Button (Directly Below Card) */
+.kite-more-toggle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  margin: 6px auto 2px auto;
+  gap: 2px;
+  user-select: none;
+  transition: color 0.15s;
+}
+
+.kite-more-toggle:hover {
+  color: var(--kite-accent);
+}
+
+.kite-more-drawer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 6px;
 }
 
 /* Order Types (Market | Limit | SL | SL-M) */
@@ -1604,52 +1577,51 @@ body {
 .kite-order-footer {
   background: #ffffff;
   border-top: 1px solid #eef1f6;
-  padding: 12px 16px 16px 16px;
+  padding: 10px 16px 16px 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   margin-top: auto;
 }
 
-.kite-margin-summary {
+/* 1:1 Zerodha Margin & Available Funds Row (Amount ₹0.00 + ₹0.08  Avail. ₹20,000.00  🔄) */
+.kite-margin-summary-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  font-size: 12.5px;
+  padding: 2px 2px 4px 2px;
 }
 
-.kite-margin-left {
+.kite-summary-left {
   display: flex;
-  align-items: baseline;
-  gap: 6px;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+  white-space: nowrap;
 }
 
-.kite-summary-label {
-  font-size: 12px;
-  color: #64748b;
+.kite-sum-label {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.kite-sum-val {
+  color: #2870ed;
   font-weight: 600;
 }
 
-.kite-summary-amt {
-  font-size: 15px;
-  font-weight: 800;
-  color: #0f172a;
-}
-
-.kite-summary-sep {
-  color: #cbd5e1;
-}
-
-.kite-summary-charges {
-  font-size: 12px;
-  color: #64748b;
-  font-weight: 500;
+.kite-sum-plus {
+  color: #9ca3af;
+  margin: 0 1px;
+  font-weight: 600;
 }
 
 .kite-refresh-margin-btn {
   border: none;
   background: none;
   cursor: pointer;
-  color: #64748b;
+  color: #6b7280;
   padding: 4px;
   border-radius: 50%;
   display: flex;
@@ -1671,26 +1643,12 @@ body {
   to { transform: rotate(360deg); }
 }
 
-.kite-avail-margin-row {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11.5px;
-  color: #64748b;
-  font-weight: 600;
-}
-
-.kite-avail-val {
-  color: #1e293b;
-  font-weight: 700;
-}
-
 /* ==========================================================================
    THE ICONIC ZERODHA SWIPE SLIDER BUTTON
    ========================================================================== */
 .kite-swipe-container {
   width: 100%;
-  padding-top: 4px;
+  padding-top: 2px;
 }
 
 .kite-swipe-track {

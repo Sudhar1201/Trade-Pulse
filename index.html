@@ -797,7 +797,7 @@
   <div class="modal-backdrop" id="orderModalBackdrop">
     <div class="order-modal kite-order-window buy-theme" id="orderModalCard">
       
-      <!-- Kite Mobile/Desktop Header -->
+      <!-- Kite Mobile/Desktop Header (1:1 with Zerodha Kite app) -->
       <div class="kite-order-header" id="orderModalHeader">
         <button class="kite-order-back-btn" id="closeOrderModalBtn" type="button" title="Back">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -806,14 +806,8 @@
         </button>
 
         <div class="kite-order-title-box">
-          <div class="kite-order-symbol" id="modalStockSymbol">TATAMOTORS</div>
+          <div class="kite-order-symbol" id="modalStockSymbol">NBCC</div>
           <div class="kite-order-subtag" id="modalStockSubtag" style="display:none;"></div>
-        </div>
-
-        <!-- Buy / Sell Mode Switcher Pill in Header -->
-        <div class="kite-side-switch-wrap">
-          <button type="button" class="side-toggle-btn kite-side-pill active" id="btnSideBuy" data-side="BUY">BUY</button>
-          <button type="button" class="side-toggle-btn kite-side-pill" id="btnSideSell" data-side="SELL">SELL</button>
         </div>
 
         <button class="kite-order-menu-btn" type="button" title="Order settings">
@@ -831,20 +825,20 @@
           <input type="radio" name="orderExchange" value="NSE" checked>
           <span class="kite-radio-dot"></span>
           <span class="kite-exchange-name">NSE</span>
-          <span class="kite-exchange-price" id="orderLtpNSE">₹930.70</span>
+          <span class="kite-exchange-price" id="orderLtpNSE">₹81.28</span>
         </label>
         <label class="kite-exchange-opt" id="exchangeOptBSE">
           <input type="radio" name="orderExchange" value="BSE">
           <span class="kite-radio-dot"></span>
           <span class="kite-exchange-name">BSE</span>
-          <span class="kite-exchange-price" id="orderLtpBSE">₹930.95</span>
+          <span class="kite-exchange-price" id="orderLtpBSE">₹81.27</span>
         </label>
       </div>
 
-      <!-- Variety Subtabs (Regular | Cover | AMO | Iceberg) -->
+      <!-- Variety Subtabs (Regular | MTF | AMO | Iceberg) -->
       <div class="kite-variety-tabs" id="orderVarietyTabs">
         <button type="button" class="kite-variety-tab active" data-variety="REGULAR">Regular</button>
-        <button type="button" class="kite-variety-tab" data-variety="COVER">Cover</button>
+        <button type="button" class="kite-variety-tab" data-variety="MTF">MTF</button>
         <button type="button" class="kite-variety-tab" data-variety="AMO">AMO</button>
         <button type="button" class="kite-variety-tab" data-variety="ICEBERG">Iceberg</button>
       </div>
@@ -867,32 +861,39 @@
             </div>
             <div class="kite-input-box">
               <input type="number" id="orderQtyInput" class="order-input kite-num-input" value="1" min="1" step="1">
-              <div class="kite-stepper-icons">
-                <button type="button" class="kite-stepper-btn" id="btnQtyUp" title="Increase">▲</button>
-                <button type="button" class="kite-stepper-btn" id="btnQtyDown" title="Decrease">▼</button>
+              <div class="kite-stepper-icon-box" id="btnQtyStep" title="Change Quantity">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="4" y1="8" x2="20" y2="8"></line>
+                  <polyline points="16 4 20 8 16 12"></polyline>
+                  <line x1="20" y1="16" x2="4" y2="16"></line>
+                  <polyline points="8 20 4 16 8 12"></polyline>
+                </svg>
               </div>
             </div>
           </div>
 
-          <!-- Price Row -->
+          <!-- Price / Limit Row -->
           <div class="kite-field-group">
             <div class="kite-field-header">
               <div class="kite-price-label-wrap">
-                <label class="kite-field-label">Price</label>
+                <label class="kite-field-label" id="priceInputLabel">Limit</label>
                 <button type="button" class="kite-pencil-btn" id="btnTogglePricePencil" title="Toggle Limit/Market Price">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 20h9"></path>
                     <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
                   </svg>
                 </button>
               </div>
-              <span id="orderMarketBadge" class="kite-market-badge">LTP</span>
             </div>
             <div class="kite-input-box">
-              <input type="number" id="orderPriceInput" class="order-input kite-num-input" value="930.95" step="0.05" disabled>
-              <div class="kite-stepper-icons">
-                <button type="button" class="kite-stepper-btn" id="btnPriceUp" title="Increase">▲</button>
-                <button type="button" class="kite-stepper-btn" id="btnPriceDown" title="Decrease">▼</button>
+              <input type="number" id="orderPriceInput" class="order-input kite-num-input" value="81.28" step="0.05">
+              <div class="kite-stepper-icon-box" id="btnPriceStep" title="Change Price">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="4" y1="8" x2="20" y2="8"></line>
+                  <polyline points="16 4 20 8 16 12"></polyline>
+                  <line x1="20" y1="16" x2="4" y2="16"></line>
+                  <polyline points="8 20 4 16 8 12"></polyline>
+                </svg>
               </div>
             </div>
           </div>
@@ -900,105 +901,111 @@
           <!-- Product Selection Radios (Intraday vs Longterm) -->
           <div class="product-type-row kite-product-radios">
             <label class="product-radio-label kite-product-radio" id="productRadioMIS" data-product="MIS">
-              <input type="radio" name="productRadio" value="MIS" style="accent-color:var(--tp-blue);">
+              <input type="radio" name="productRadio" value="MIS">
               <span class="kite-custom-radio"></span>
-              <span class="kite-product-text" id="labelIntraday">Intraday <span class="kite-subtext">MIS</span></span>
+              <span class="kite-product-text" id="labelIntraday">Intraday</span>
             </label>
             <label class="product-radio-label kite-product-radio selected" id="productRadioCNC" data-product="CNC">
-              <input type="radio" name="productRadio" value="CNC" checked style="accent-color:var(--tp-blue);">
+              <input type="radio" name="productRadio" value="CNC" checked>
               <span class="kite-custom-radio"></span>
-              <span class="kite-product-text" id="productCNCLabel">Longterm <span class="kite-subtext">CNC</span></span>
+              <span class="kite-product-text" id="productCNCLabel">Longterm</span>
             </label>
           </div>
         </div>
 
-        <!-- Order Type Segmented Pills (Market | Limit | SL | SL-M) -->
-        <div class="order-type-tabs kite-order-types">
-          <button type="button" class="order-type-tab kite-type-pill active" data-type="MARKET">Market</button>
-          <button type="button" class="order-type-tab kite-type-pill" data-type="LIMIT">Limit</button>
-          <button type="button" class="order-type-tab kite-type-pill" data-type="SL">SL</button>
-          <button type="button" class="order-type-tab kite-type-pill" data-type="SL-M">SL-M</button>
+        <!-- Clean "More ∨" accordion matching Zerodha Kite Sell screen -->
+        <div class="kite-more-toggle" id="btnToggleMore">
+          <span>More</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
         </div>
 
-        <!-- Stoploss and GTT Rows with iOS-style toggles -->
-        <div class="kite-toggle-rows">
-          <div class="kite-toggle-row">
-            <div class="kite-toggle-info">
-              <span class="kite-toggle-title">Stoploss</span>
-              <span class="kite-info-icon" title="Trigger a stop-loss market or limit order">ⓘ</span>
+        <!-- Expandable Drawer for Extra Options -->
+        <div class="kite-more-drawer" id="kiteMoreDrawer" style="display:none;">
+          <!-- Order Type Segmented Pills (Market | Limit | SL | SL-M) -->
+          <div class="order-type-tabs kite-order-types">
+            <button type="button" class="order-type-tab kite-type-pill" data-type="MARKET">Market</button>
+            <button type="button" class="order-type-tab kite-type-pill active" data-type="LIMIT">Limit</button>
+            <button type="button" class="order-type-tab kite-type-pill" data-type="SL">SL</button>
+            <button type="button" class="order-type-tab kite-type-pill" data-type="SL-M">SL-M</button>
+          </div>
+
+          <!-- Stoploss and GTT Rows with iOS-style toggles -->
+          <div class="kite-toggle-rows">
+            <div class="kite-toggle-row">
+              <div class="kite-toggle-info">
+                <span class="kite-toggle-title">Stoploss</span>
+                <span class="kite-info-icon" title="Trigger a stop-loss market or limit order">ⓘ</span>
+              </div>
+              <label class="kite-switch">
+                <input type="checkbox" id="orderToggleSL">
+                <span class="kite-slider-switch"></span>
+              </label>
             </div>
-            <label class="kite-switch">
-              <input type="checkbox" id="orderToggleSL">
-              <span class="kite-slider-switch"></span>
-            </label>
-          </div>
 
-          <div class="kite-toggle-row">
-            <div class="kite-toggle-info">
-              <span class="kite-toggle-title">GTT</span>
-              <span class="kite-info-icon" title="Good Till Triggered order">ⓘ</span>
+            <div class="kite-toggle-row">
+              <div class="kite-toggle-info">
+                <span class="kite-toggle-title">GTT</span>
+                <span class="kite-info-icon" title="Good Till Triggered order">ⓘ</span>
+              </div>
+              <label class="kite-switch">
+                <input type="checkbox" id="orderToggleGTT">
+                <span class="kite-slider-switch"></span>
+              </label>
             </div>
-            <label class="kite-switch">
-              <input type="checkbox" id="orderToggleGTT">
-              <span class="kite-slider-switch"></span>
-            </label>
+          </div>
+
+          <!-- Tags and Advanced accordion row -->
+          <div class="kite-meta-row">
+            <div class="kite-tags-btn" id="btnOrderTags">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                <line x1="7" y1="7" x2="7.01" y2="7" stroke="white" stroke-width="2"></line>
+              </svg>
+              <span>Tags (0)</span>
+            </div>
+
+            <button type="button" class="kite-advanced-toggle" id="btnToggleAdvanced">
+              <span>Advanced</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Collapsible Advanced Details -->
+          <div class="kite-advanced-content" id="kiteAdvancedContent" style="display:none;">
+            <div class="kite-adv-item">
+              <span>Order Validity:</span>
+              <span class="kite-adv-val">DAY</span>
+            </div>
+            <div class="kite-adv-item">
+              <span>Disclosed Qty:</span>
+              <span class="kite-adv-val">0</span>
+            </div>
           </div>
         </div>
 
-        <!-- Tags and Advanced accordion row -->
-        <div class="kite-meta-row">
-          <div class="kite-tags-btn" id="btnOrderTags">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
-              <line x1="7" y1="7" x2="7.01" y2="7" stroke="white" stroke-width="2"></line>
-            </svg>
-            <span>Tags (0)</span>
-          </div>
-
-          <button type="button" class="kite-advanced-toggle" id="btnToggleAdvanced">
-            <span>Advanced</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </button>
-        </div>
-
-        <!-- Collapsible Advanced Details -->
-        <div class="kite-advanced-content" id="kiteAdvancedContent" style="display:none;">
-          <div class="kite-adv-item">
-            <span>Order Validity:</span>
-            <span class="kite-adv-val">DAY</span>
-          </div>
-          <div class="kite-adv-item">
-            <span>Disclosed Qty:</span>
-            <span class="kite-adv-val">0</span>
-          </div>
-        </div>
       </div>
 
       <!-- Sticky Kite Order Footer with Margin and Swipe Slider -->
       <div class="order-modal-footer kite-order-footer">
-        <!-- Margin and Charges Summary Row -->
-        <div class="kite-margin-summary">
-          <div class="kite-margin-left">
-            <span class="kite-summary-label" id="marginNeededText">Amount</span>
-            <span class="kite-summary-amt" id="marginRequiredVal">₹930.95</span>
-            <span class="kite-summary-sep">•</span>
-            <span class="kite-summary-charges" id="orderChargesVal">Charges ₹0.97</span>
+        <!-- Exact Zerodha Summary Line (Amount ₹0.00 + ₹0.08  Avail. ₹20,000.00   🔄) -->
+        <div class="kite-margin-summary-bar">
+          <div class="kite-summary-left">
+            <span class="kite-sum-label">Amount</span>
+            <span class="kite-sum-val text-blue" id="marginRequiredVal">₹0.00</span>
+            <span class="kite-sum-plus">+</span>
+            <span class="kite-sum-val text-blue" id="orderChargesVal">₹0.08</span>
+            <span class="kite-sum-label" style="margin-left:8px;">Avail.</span>
+            <span class="kite-sum-val text-blue" id="marginAvailableVal">₹20,000.00</span>
           </div>
-          <div class="kite-margin-right">
-            <button type="button" class="kite-refresh-margin-btn" id="orderRefreshMarginBtn" title="Refresh margin">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- Available Margin Subtitle -->
-        <div class="kite-avail-margin-row">
-          <span>Available:</span>
-          <span class="kite-avail-val" id="marginAvailableVal">₹20,000.00</span>
+          <button type="button" class="kite-refresh-margin-btn" id="orderRefreshMarginBtn" title="Refresh">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+            </svg>
+          </button>
         </div>
 
         <!-- THE ICONIC ZERODHA SWIPE SLIDER BUTTON -->
@@ -1009,12 +1016,12 @@
                 <polyline points="9 18 15 12 9 6"></polyline>
               </svg>
             </div>
-            <div class="kite-swipe-text" id="orderSwipeText">SWIPE TO BUY</div>
+            <div class="kite-swipe-text" id="orderSwipeText">SWIPE TO SELL</div>
           </div>
         </div>
 
         <!-- Programmatic submit button kept for engine / accessibility -->
-        <button class="btn-submit-order buy-action" id="submitOrderBtn" style="display:none;" type="button">Buy</button>
+        <button class="btn-submit-order buy-action" id="submitOrderBtn" style="display:none;" type="button">Submit</button>
       </div>
 
     </div>
