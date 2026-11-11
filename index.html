@@ -807,10 +807,11 @@
 
         <div class="kite-order-title-box">
           <div class="kite-order-symbol" id="modalStockSymbol">NBCC</div>
+          <button type="button" class="kite-side-badge-toggle side-buy" id="orderHeaderSideBadge" onclick="app.toggleOrderSide()" title="Tap to switch BUY / SELL">BUY</button>
           <div class="kite-order-subtag" id="modalStockSubtag" style="display:none;"></div>
         </div>
 
-        <button class="kite-order-menu-btn" type="button" title="Order settings">
+        <button class="kite-order-menu-btn" id="orderModalMenuBtn" type="button" title="Switch Buy / Sell" onclick="app.toggleOrderSide()">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
             <circle cx="12" cy="5" r="2"></circle>
             <circle cx="12" cy="12" r="2"></circle>

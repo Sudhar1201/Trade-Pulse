@@ -22,12 +22,26 @@ class TradingStore {
 
   init() {
     // Migration: ensure holdings and positions start 100% clean and empty as requested
-    const CLEANUP_KEY = "tp_empty_portfolio_v6";
+    const CLEANUP_KEY = "tradepulse_clean_v10";
     try {
       if (!localStorage.getItem(CLEANUP_KEY)) {
         Object.keys(localStorage).forEach(k => {
-          if (k.startsWith("tp_holdings_") || k.startsWith("tp_positions_")) {
+          if (
+            k.startsWith("tradepulse_holdings_") ||
+            k.startsWith("tradepulse_positions_") ||
+            k.startsWith("tp_holdings_") ||
+            k.startsWith("tp_positions_")
+          ) {
             localStorage.setItem(k, JSON.stringify([]));
+          }
+          if (k.startsWith("tradepulse_funds_") || k.startsWith("tp_funds_")) {
+            localStorage.setItem(k, JSON.stringify({
+              availableCash: INITIAL_DEMO_CAPITAL,
+              usedMargin: 0.00,
+              totalBalance: INITIAL_DEMO_CAPITAL,
+              initialCapital: INITIAL_DEMO_CAPITAL,
+              realizedPnL: 0.00
+            }));
           }
         });
         localStorage.setItem(CLEANUP_KEY, "true");
@@ -293,8 +307,9 @@ class TradingStore {
     // Ensure clean empty portfolio as requested: holdings and positions start 100% empty
     if (Array.isArray(this.holdings)) {
       this.holdings = this.holdings.filter(h => {
-        if (h.symbol === "OBEROIRLTY" || h.symbol === "DLF" || h.symbol === "KALYANKJIL" || h.symbol === "INDIACEM" || h.symbol === "HBLENGINE") {
-          if (h.createdDate === "2026-11-05" || h.createdDate === "2026-11-06" || !h.orderId) return false;
+        if (!h.orderId || h.orderId.startsWith("seed_") || h.orderId.startsWith("demo_") ||
+            h.symbol === "OBEROIRLTY" || h.symbol === "DLF" || h.symbol === "KALYANKJIL" || h.symbol === "INDIACEM" || h.symbol === "HBLENGINE") {
+          return false;
         }
         return h.quantity > 0 && (h.holdingDays || 0) >= 1 && h.createdDate !== this.getTodayDateString();
       });

@@ -558,7 +558,7 @@ class App {
           const isAdded = activeList.includes(s.symbol);
           const isPos = (s.change || 0) >= 0;
           return `
-            <div class="search-result-item" onclick="app.openStockSheet('${s.symbol}')">
+            <div class="search-result-item" onclick="app.openOrderModal('${s.symbol}', 'BUY')">
               <div style="flex:1;min-width:0;padding-right:8px;">
                 <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
                   <span class="font-bold text-dark" style="font-size:13px;">${s.symbol}</span>
@@ -684,14 +684,8 @@ class App {
     if (!s) return;
     this.selectedStock = s;
 
-    // On mobile screens (<= 768px), open the signature Zerodha Mobile Action Sheet!
-    if (window.innerWidth <= 768) {
-      this.openStockSheet(symbol);
-      return;
-    }
-
-    // On desktop, clicking a stock opens its interactive Chart Modal!
-    this.openChartModal(symbol);
+    // Directly open 1:1 Kite Buy Order Window without any intermediate popups!
+    this.openOrderModal(symbol, "BUY");
   }
 
   // --- Real-Time Market Tick Subscriber ---
@@ -790,6 +784,12 @@ class App {
         if (e.target === modalBackdrop) this.closeOrderModal();
       });
     }
+
+    // Toggle BUY / SELL from Header Badge or 3-Dots Menu
+    const sideBadge = document.getElementById("orderHeaderSideBadge");
+    if (sideBadge) sideBadge.addEventListener("click", () => this.toggleOrderSide());
+    const menuBtn = document.getElementById("orderModalMenuBtn");
+    if (menuBtn) menuBtn.addEventListener("click", () => this.toggleOrderSide());
 
     // Exchange selector options (NSE / BSE)
     const exchangeOpts = document.querySelectorAll(".kite-exchange-opt");
@@ -1236,6 +1236,7 @@ class App {
     const modalCard = document.getElementById("orderModalCard");
     const submitBtn = document.getElementById("submitOrderBtn");
     const swipeText = document.getElementById("orderSwipeText");
+    const sideBadge = document.getElementById("orderHeaderSideBadge");
 
     if (modalCard) {
       modalCard.classList.toggle("buy-theme", side === "BUY");
@@ -1246,12 +1247,25 @@ class App {
       swipeText.textContent = side === "BUY" ? "SWIPE TO BUY" : "SWIPE TO SELL";
     }
 
+    if (sideBadge) {
+      sideBadge.textContent = side;
+      sideBadge.className = `kite-side-badge-toggle ${side === "BUY" ? "side-buy" : "side-sell"}`;
+    }
+
     if (submitBtn) {
       submitBtn.textContent = `${side} ${this.selectedStock ? this.selectedStock.symbol : ''}`;
       submitBtn.className = `btn-submit-order ${side === "BUY" ? "buy-action" : "sell-action"}`;
     }
 
     this.recalculateOrderMargin();
+  }
+
+  toggleOrderSide() {
+    const nextSide = this.activeOrderSide === "BUY" ? "SELL" : "BUY";
+    this.setOrderSide(nextSide);
+    if (window.showToast) {
+      window.showToast(`Switched to ${nextSide} order`, "info");
+    }
   }
 
   recalculateOrderMargin() {
@@ -1769,7 +1783,7 @@ class App {
       }
 
       return `
-        <div class="kite-pos-item ${isClosed ? 'kite-item-closed' : ''}" onclick="app.openHoldingSheet('${h.symbol}')">
+        <div class="kite-pos-item ${isClosed ? 'kite-item-closed' : ''}" onclick="app.openOrderModal('${h.symbol}', 'SELL')">
           <div class="kite-item-row kite-row-top">
             <div class="kite-qty-avg">
               <span>Qty. <b class="${isClosed ? 'val-muted' : 'val-dark'}">${isClosed ? '0' : h.quantity}</b></span>
@@ -1936,7 +1950,7 @@ class App {
       const productLabel = pos.isOption ? "NRML" : (pos.product || "NRML");
 
       return `
-        <div class="kite-pos-item ${isClosed ? 'kite-item-closed' : ''}" onclick="app.openPositionSheet('${pos.id}')">
+        <div class="kite-pos-item ${isClosed ? 'kite-item-closed' : ''}" onclick="app.openOrderModal('${pos.symbol}', 'SELL')">
           <div class="kite-item-row kite-row-top">
             <div class="kite-qty-avg">
               <span>Qty. <b class="${isClosed ? 'val-muted' : 'val-dark'}">${isClosed ? '0' : Math.abs(pos.quantity)}</b></span>
@@ -1993,74 +2007,15 @@ class App {
     this.renderPositions();
   }
 
-  // --- Zerodha Kite Action Sheet & Toolbar Handlers ---
+  // --- Direct Order Window Handlers (No Intermediate Popups) ---
   openPositionSheet(posId) {
-    const pos = store.positions.find(p => p.id === posId);
-    if (!pos) return;
-    this.activeSheetItem = { type: "position", data: pos };
-
-    const stock = STOCKS_MAP.get(pos.symbol);
-    const ltp = stock ? stock.price : (pos.exitPrice || pos.avgPrice);
-    const isClosed = pos.status === "CLOSED" || pos.quantity === 0;
-    const isLong = pos.quantity > 0;
-    const pnl = isClosed ? (pos.realizedPL || 0) : ((isLong ? (ltp - pos.avgPrice) : (pos.avgPrice - ltp)) * Math.abs(pos.quantity));
-
-    const symEl = document.getElementById("kiteSheetSymbol");
-    const subEl = document.getElementById("kiteSheetSub");
-    const ltpEl = document.getElementById("kiteSheetLtp");
-    const pnlEl = document.getElementById("kiteSheetPnl");
-    const exitBtn = document.getElementById("kiteSheetBtnExit");
-
-    if (symEl) symEl.textContent = pos.symbol;
-    if (subEl) {
-      const ex = pos.isOption ? (pos.underlying === "SENSEX" ? "BFO" : "NFO") : (stock?.exchange || "NSE");
-      subEl.textContent = `${ex} • ${pos.product || "NRML"} • Net Qty: ${isClosed ? 0 : pos.quantity}`;
-    }
-    if (ltpEl) ltpEl.textContent = `₹${ltp.toFixed(2)}`;
-    if (pnlEl) {
-      pnlEl.className = `kite-sheet-pnl ${pnl >= 0 ? 'text-green' : 'text-red'}`;
-      pnlEl.textContent = `${pnl >= 0 ? '+' : ''}₹${pnl.toFixed(2)} ${isClosed ? '(Realized)' : ''}`;
-    }
-    if (exitBtn) {
-      exitBtn.style.display = isClosed ? "none" : "flex";
-      exitBtn.textContent = "🔴 Exit Position";
-    }
-
-    const backdrop = document.getElementById("kiteItemSheetBackdrop");
-    if (backdrop) backdrop.style.display = "flex";
+    const pos = (store.positions || []).find(p => p.id === posId);
+    const sym = pos ? pos.symbol : posId;
+    this.openOrderModal(sym, "SELL");
   }
 
   openHoldingSheet(symbol) {
-    const h = store.holdings.find(item => item.symbol === symbol);
-    if (!h) return;
-    this.activeSheetItem = { type: "holding", data: h };
-
-    const stock = STOCKS_MAP.get(symbol);
-    const ltp = stock ? stock.price : (h.exitPrice || h.avgPrice);
-    const isClosed = h.quantity === 0 || h.status === "CLOSED";
-    const curVal = isClosed ? 0 : (h.quantity * ltp);
-    const pl = isClosed ? (h.realizedPL || 0) : (curVal - h.investedValue);
-
-    const symEl = document.getElementById("kiteSheetSymbol");
-    const subEl = document.getElementById("kiteSheetSub");
-    const ltpEl = document.getElementById("kiteSheetLtp");
-    const pnlEl = document.getElementById("kiteSheetPnl");
-    const exitBtn = document.getElementById("kiteSheetBtnExit");
-
-    if (symEl) symEl.textContent = h.symbol;
-    if (subEl) subEl.textContent = `${h.exchange || "NSE"} • CNC • Qty: ${isClosed ? 0 : h.quantity}`;
-    if (ltpEl) ltpEl.textContent = `₹${ltp.toFixed(2)}`;
-    if (pnlEl) {
-      pnlEl.className = `kite-sheet-pnl ${pl >= 0 ? 'text-green' : 'text-red'}`;
-      pnlEl.textContent = `${pl >= 0 ? '+' : ''}₹${pl.toFixed(2)} ${isClosed ? '(Realized)' : ''}`;
-    }
-    if (exitBtn) {
-      exitBtn.style.display = isClosed ? "none" : "flex";
-      exitBtn.textContent = "🔴 Exit / Sell Holding";
-    }
-
-    const backdrop = document.getElementById("kiteItemSheetBackdrop");
-    if (backdrop) backdrop.style.display = "flex";
+    this.openOrderModal(symbol, "SELL");
   }
 
   closeItemSheet() {
@@ -2631,86 +2586,7 @@ class App {
   }
 
   openStockSheet(symbol) {
-    const stock = STOCKS_MAP.get(symbol);
-    if (!stock) return;
-    this.selectedStock = stock;
-
-    const sheet = document.getElementById("mobileStockSheetBackdrop");
-    const symEl = document.getElementById("sheetStockSymbol");
-    const exEl = document.getElementById("sheetStockExchange");
-    const secEl = document.getElementById("sheetStockSector");
-    const nameEl = document.getElementById("sheetStockFullname");
-    const ltpEl = document.getElementById("sheetStockLTP");
-    const deltaEl = document.getElementById("sheetStockDelta");
-
-    const btnBuy = document.getElementById("sheetBtnBuy");
-    const btnSell = document.getElementById("sheetBtnSell");
-    const btnChart = document.getElementById("sheetBtnChart");
-    const btnOc = document.getElementById("sheetBtnOptionChain");
-    const btnDepth = document.getElementById("sheetBtnDepth");
-
-    const isPos = stock.change >= 0;
-
-    if (symEl) symEl.textContent = stock.symbol;
-    if (exEl) exEl.textContent = stock.exchange || "NSE";
-    if (secEl) {
-      secEl.textContent = stock.sector || "EQUITY";
-      secEl.className = `sheet-sector-tag ${stock.sectorClass || ''}`;
-    }
-    if (nameEl) nameEl.textContent = stock.name;
-    if (ltpEl) ltpEl.textContent = `₹${stock.price.toFixed(2)}`;
-    if (deltaEl) {
-      deltaEl.className = `sheet-delta ${isPos ? 'text-green' : 'text-red'}`;
-      deltaEl.textContent = `${isPos ? '+' : ''}${stock.change.toFixed(2)} (${isPos ? '+' : ''}${stock.pChange.toFixed(2)}%)`;
-    }
-
-    const openVal = stock.prevClose ? (stock.prevClose * 1.002).toFixed(2) : stock.price.toFixed(2);
-    const highVal = (stock.price * 1.012).toFixed(2);
-    const lowVal = (stock.price * 0.988).toFixed(2);
-    const prevVal = (stock.prevClose || stock.price).toFixed(2);
-
-    const statOpen = document.getElementById("sheetStatOpen");
-    const statHigh = document.getElementById("sheetStatHigh");
-    const statLow = document.getElementById("sheetStatLow");
-    const statClose = document.getElementById("sheetStatClose");
-
-    if (statOpen) statOpen.textContent = `₹${openVal}`;
-    if (statHigh) statHigh.textContent = `₹${highVal}`;
-    if (statLow) statLow.textContent = `₹${lowVal}`;
-    if (statClose) statClose.textContent = `₹${prevVal}`;
-
-    if (btnBuy) {
-      btnBuy.onclick = () => {
-        this.closeStockSheet();
-        this.openOrderModal(stock.symbol, "BUY");
-      };
-    }
-    if (btnSell) {
-      btnSell.onclick = () => {
-        this.closeStockSheet();
-        this.openOrderModal(stock.symbol, "SELL");
-      };
-    }
-    if (btnChart) {
-      btnChart.onclick = () => {
-        this.closeStockSheet();
-        this.openChartModal(stock.symbol);
-      };
-    }
-    if (btnOc) {
-      btnOc.onclick = () => {
-        this.closeStockSheet();
-        this.openOptionChainModal(stock.symbol);
-      };
-    }
-    if (btnDepth) {
-      btnDepth.onclick = () => {
-        this.closeStockSheet();
-        this.openDepthModal(stock.symbol);
-      };
-    }
-
-    if (sheet) sheet.classList.add("open");
+    this.openOrderModal(symbol, "BUY");
   }
 
   closeStockSheet() {
@@ -2718,69 +2594,16 @@ class App {
     if (sheet) sheet.classList.remove("open");
   }
 
-  openHoldingSheet(symbol) {
-    const h = (store.holdings || []).find(item => item.symbol === symbol);
-    if (!h) return;
-    const stock = STOCKS_MAP.get(symbol);
-    const ltp = stock ? stock.price : (h.exitPrice || h.avgPrice);
-    const isClosed = h.quantity === 0 || h.status === "CLOSED";
-    const pl = isClosed ? (h.realizedPL || 0) : ((h.quantity * ltp) - h.investedValue);
-
-    this.activeSheetItem = { type: "holding", data: h };
-
-    const symEl = document.getElementById("kiteSheetSymbol");
-    const subEl = document.getElementById("kiteSheetSub");
-    const ltpEl = document.getElementById("kiteSheetLtp");
-    const pnlEl = document.getElementById("kiteSheetPnl");
-    const exitBtn = document.getElementById("kiteSheetBtnExit");
-
-    if (symEl) symEl.textContent = h.symbol;
-    if (subEl) subEl.textContent = `${h.exchange || 'NSE'} • CNC • Demat Qty: ${isClosed ? 0 : h.quantity}`;
-    if (ltpEl) ltpEl.textContent = `₹${ltp.toFixed(2)}`;
-    if (pnlEl) {
-      pnlEl.className = `kite-sheet-pnl ${pl >= 0 ? 'text-green' : 'text-red'}`;
-      pnlEl.textContent = `${pl >= 0 ? '+' : ''}₹${pl.toFixed(2)} ${isClosed ? '(Sold)' : ''}`;
-    }
-    if (exitBtn) {
-      exitBtn.style.display = isClosed ? "none" : "flex";
-      exitBtn.textContent = "🔴 Sell Holding";
-    }
-
-    const sheet = document.getElementById("kiteItemSheetBackdrop");
-    if (sheet) sheet.style.display = "flex";
-  }
-
   openOrderSheet(orderId) {
     const order = (store.orders || []).find(o => o.id === orderId);
     if (!order) return;
-    this.activeSheetItem = { type: "order", data: order };
-
-    const symEl = document.getElementById("kiteSheetSymbol");
-    const subEl = document.getElementById("kiteSheetSub");
-    const ltpEl = document.getElementById("kiteSheetLtp");
-    const pnlEl = document.getElementById("kiteSheetPnl");
-    const exitBtn = document.getElementById("kiteSheetBtnExit");
-
-    if (symEl) symEl.textContent = order.symbol;
-    if (subEl) subEl.textContent = `${order.side} • ${order.orderType} • Qty: ${order.quantity}`;
-    if (ltpEl) ltpEl.textContent = `₹${order.price.toFixed(2)}`;
-    if (pnlEl) {
-      pnlEl.className = "kite-sheet-pnl text-blue";
-      pnlEl.textContent = order.status;
+    if (order.status === "OPEN" || order.status === "AMO PENDING") {
+      if (confirm(`Do you want to cancel the open order for ${order.symbol}?`)) {
+        this.cancelOrder(order.id);
+      }
+    } else {
+      this.openOrderModal(order.symbol, order.side || "BUY");
     }
-    if (exitBtn) {
-      const canCancel = order.status === "OPEN" || order.status === "AMO PENDING";
-      exitBtn.style.display = canCancel ? "flex" : "none";
-      exitBtn.textContent = "Cancel Order";
-    }
-
-    const sheet = document.getElementById("kiteItemSheetBackdrop");
-    if (sheet) sheet.style.display = "flex";
-  }
-
-  closeItemSheet() {
-    const sheet = document.getElementById("kiteItemSheetBackdrop");
-    if (sheet) sheet.style.display = "none";
   }
 
   actionSheetExit() {
